@@ -8,7 +8,7 @@ RUN mvn -B clean package
 FROM eclipse-temurin:21-jre
 RUN useradd --system --uid 10001 invicta
 WORKDIR /app
-COPY --from=build /workspace/target/invicta-platform-*.jar app.jar
+COPY --from=build /workspace/target/invicta-*.jar app.jar
 USER invicta
 EXPOSE 8081
 ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75.0", "-jar", "/app/app.jar"]

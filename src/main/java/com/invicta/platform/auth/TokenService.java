@@ -23,7 +23,7 @@ public class TokenService {
         Instant now = Instant.now();
         Instant expiresAt = now.plus(properties.auth().tokenTtl());
         JwtClaimsSet claims = JwtClaimsSet.builder()
-                .issuer("invicta-platform")
+                .issuer("invicta")
                 .issuedAt(now)
                 .expiresAt(expiresAt)
                 .subject(Long.toString(account.id()))

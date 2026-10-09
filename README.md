@@ -1,4 +1,4 @@
-# Invicta Platform
+# Invicta
 
 Invicta 是基于现有 UTC Pay 数据库的独立统计与看板服务。它是一个单独部署、单独发布的代码库，不复制旧平台的钱包登录与链上业务实现。
 
@@ -21,9 +21,11 @@ Invicta 是基于现有 UTC Pay 数据库的独立统计与看板服务。它是
 | GET | `/api/v1/organizations` | 机构分页列表 |
 | GET | `/api/v1/chains` | 链列表 |
 | GET | `/api/v1/currencies` | 币种列表 |
-| GET | `/api/v1/payments` | 收单分页列表 |
-| GET | `/api/v1/recharges` | 充值分页列表 |
-| GET | `/api/v1/transfers` | 转账分页列表 |
+| GET | `/api/v1/payments` | 收单分页列表、详情、统计 |
+| GET | `/api/v1/recharges` | 充值分页列表、详情、统计 |
+| GET | `/api/v1/aggregations` | 归集分页列表、详情、统计、钱包币种余额 |
+| GET | `/api/v1/balances` | 平衡分页列表、详情、统计、余额占比 |
+| GET/POST | `/api/v1/withdrawals` | 提现列表、详情、统计；申请/审批/确认转调老平台 |
 | GET | `/api/v1/dashboard/summary` | 看板汇总 |
 
 Swagger UI: `http://localhost:8081/docs`
@@ -79,5 +81,5 @@ curl 'http://localhost:8081/api/v1/payments?orgId=100&page=0&size=20' \
 
 1. 与旧平台真实库表做集成测试，校准历史字段类型与状态枚举。
 2. 将内存验证码替换为 Redis，并接入正式邮件服务和审计日志。
-3. 按 `sys` 控制器清单逐个迁移只读接口；每个写接口建立明确的旧 API 对应关系。
+3. 按 `sys` 控制器清单继续迁移非核心辅助接口；每个写接口建立明确的旧 API 对应关系。
 4. 为高频看板查询增加组合索引、只读副本和缓存，不在首版直接改共享生产库。

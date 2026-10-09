@@ -1,5 +1,5 @@
 services:
-  invicta-api:
+  invicta:
     build: .
     ports:
       - "8081:8081"

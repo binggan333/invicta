@@ -12,9 +12,9 @@
     </parent>
 
     <groupId>com.invicta</groupId>
-    <artifactId>invicta-platform</artifactId>
+    <artifactId>invicta</artifactId>
     <version>0.1.0-SNAPSHOT</version>
-    <name>Invicta Platform</name>
+    <name>Invicta</name>
     <description>Read-only operations and analytics API for the Invicta platform</description>
 
     <properties>

@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Repository
 public class OrderQueryRepository {
@@ -38,6 +39,25 @@ public class OrderQueryRepository {
     }
 
     @Transactional(readOnly = true)
+    public Optional<PaymentView> payment(long orgId, long paymentId) {
+        return jdbc.sql("""
+                SELECT payment_id, org_id, chain_id, currency_id, out_trade_no, out_payment_no,
+                       quote_amount, settlement_amount, expected_amount, payment_status, transfer_hash,
+                       user_wallet_address, user_email, create_time
+                FROM order_payment
+                WHERE payment_id=:paymentId AND org_id=:orgId AND COALESCE(is_delete,0)=0
+                """).param("paymentId", paymentId).param("orgId", orgId).query(PaymentView.class).optional();
+    }
+
+    @Transactional(readOnly = true)
+    public OrderStatistics paymentStatistics(long orgId, Integer chainId, Integer currencyId, Integer status,
+                                              String keyword, LocalDateTime from, LocalDateTime to) {
+        QueryParts parts = filters("org_id", orgId, chainId, currencyId, status, "payment_status", keyword,
+                List.of("out_trade_no", "out_payment_no", "transfer_hash", "user_wallet_address"), "create_time", from, to);
+        return statistics("order_payment", "settlement_amount", parts);
+    }
+
+    @Transactional(readOnly = true)
     public PageResponse<RechargeView> recharges(long orgId, Integer chainId, Integer currencyId, Integer status,
                                                  String keyword, LocalDateTime from, LocalDateTime to, PageQuery page) {
         QueryParts parts = filters("org_id", orgId, chainId, currencyId, status, "recharge_status", keyword,
@@ -54,6 +74,24 @@ public class OrderQueryRepository {
     }
 
     @Transactional(readOnly = true)
+    public Optional<RechargeView> recharge(long orgId, long id) {
+        return jdbc.sql("""
+                SELECT id, org_id, chain_id, wallet_id, currency_id, recharge_status, recharge_amount,
+                       transfer_hash, from_address, block_time, create_time
+                FROM order_recharge
+                WHERE id=:id AND org_id=:orgId AND COALESCE(is_delete,0)=0
+                """).param("id", id).param("orgId", orgId).query(RechargeView.class).optional();
+    }
+
+    @Transactional(readOnly = true)
+    public OrderStatistics rechargeStatistics(long orgId, Integer chainId, Integer currencyId, Integer status,
+                                               String keyword, LocalDateTime from, LocalDateTime to) {
+        QueryParts parts = filters("org_id", orgId, chainId, currencyId, status, "recharge_status", keyword,
+                List.of("transfer_hash", "from_address"), "create_time", from, to);
+        return statistics("order_recharge", "recharge_amount", parts);
+    }
+
+    @Transactional(readOnly = true)
     public PageResponse<TransferView> transfers(long orgId, Integer chainId, Integer currencyId, Integer status,
                                                  String keyword, LocalDateTime from, LocalDateTime to, PageQuery page) {
         QueryParts parts = filters("org_id", orgId, chainId, currencyId, status, "transfer_status", keyword,
@@ -67,6 +105,24 @@ public class OrderQueryRepository {
                 """ + parts.where + " ORDER BY id DESC LIMIT :limit OFFSET :offset", parts.params)
                 .query(TransferView.class).list();
         return PageResponse.of(items, total, page);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<TransferView> transfer(long orgId, long id) {
+        return jdbc.sql("""
+                SELECT id, org_id, chain_id, currency_id, out_trade_no, transfer_type, transfer_status,
+                       transfer_amount, transfer_address, total_amount, transfer_hash, transfer_fee, creat_time
+                FROM order_transfer
+                WHERE id=:id AND org_id=:orgId AND COALESCE(is_delete,0)=0
+                """).param("id", id).param("orgId", orgId).query(TransferView.class).optional();
+    }
+
+    @Transactional(readOnly = true)
+    public OrderStatistics transferStatistics(long orgId, Integer chainId, Integer currencyId, Integer status,
+                                               String keyword, LocalDateTime from, LocalDateTime to) {
+        QueryParts parts = filters("org_id", orgId, chainId, currencyId, status, "transfer_status", keyword,
+                List.of("out_trade_no", "transfer_hash", "transfer_address"), "creat_time", from, to);
+        return statistics("order_transfer", "transfer_amount", parts);
     }
 
     private QueryParts filters(String orgColumn, long orgId, Integer chainId, Integer currencyId, Integer status,
@@ -94,6 +150,12 @@ public class OrderQueryRepository {
         return query("SELECT COUNT(*) FROM " + table + parts.where, parts.params).query(Long.class).single();
     }
 
+    private OrderStatistics statistics(String table, String amountColumn, QueryParts parts) {
+        return query("SELECT COUNT(*) AS total_count, COALESCE(SUM(CAST(" + amountColumn
+                        + " AS DECIMAL(36,12))),0) AS total_amount FROM " + table + parts.where, parts.params)
+                .query(OrderStatistics.class).single();
+    }
+
     private JdbcClient.StatementSpec query(String sql, Map<String, Object> params) {
         JdbcClient.StatementSpec statement = jdbc.sql(sql);
         for (Map.Entry<String, Object> entry : params.entrySet()) statement = statement.param(entry.getKey(), entry.getValue());
@@ -112,4 +174,5 @@ public class OrderQueryRepository {
                                int transferStatus, BigDecimal transferAmount, String transferAddress,
                                BigDecimal totalAmount, String transferHash, BigDecimal transferFee,
                                LocalDateTime creatTime) {}
+    public record OrderStatistics(long totalCount, BigDecimal totalAmount) {}
 }
