@@ -1,0 +1,9 @@
+.idea/
+.vscode/
+target/
+.m2/
+*.iml
+.env
+.DS_Store
+logs/
+docker/mysql/
