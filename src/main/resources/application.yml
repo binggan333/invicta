@@ -5,22 +5,8 @@ server:
 spring:
   application:
     name: invicta
-  datasource:
-    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/utcpay?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC}
-    username: ${DB_USERNAME:invicta_readonly}
-    password: ${DB_PASSWORD:change-me}
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    hikari:
-      read-only: true
-      maximum-pool-size: ${DB_POOL_SIZE:10}
-      minimum-idle: 1
-      connection-timeout: 5000
-      validation-timeout: 3000
-  mail:
-    host: ${MAIL_HOST:127.0.0.1}
-    port: ${MAIL_PORT:1025}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
 
 management:
   endpoints:
@@ -45,5 +31,4 @@ invicta:
     enabled: ${INVICTA_MAIL_ENABLED:false}
     from: ${MAIL_FROM:no-reply@invicta.local}
   legacy-api:
-    base-url: ${LEGACY_API_BASE_URL:http://127.0.0.1:8080}
     token: ${LEGACY_API_TOKEN:}

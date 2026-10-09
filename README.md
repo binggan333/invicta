@@ -23,12 +23,21 @@ Invicta 是基于现有 UTC Pay 数据库的独立统计与看板服务。它是
 | GET | `/api/v1/currencies` | 币种列表 |
 | GET | `/api/v1/payments` | 收单分页列表、详情、统计 |
 | GET | `/api/v1/recharges` | 充值分页列表、详情、统计 |
-| GET | `/api/v1/aggregations` | 归集分页列表、详情、统计、钱包币种余额 |
+| GET | `/api/v1/summary` | 归集分页列表、详情、统计、钱包币种余额 |
 | GET | `/api/v1/balances` | 平衡分页列表、详情、统计、余额占比 |
-| GET/POST | `/api/v1/withdrawals` | 提现列表、详情、统计；申请/审批/确认转调老平台 |
+| GET/POST | `/api/v1/withdraw` | 提现列表、详情、统计；申请/审批/确认转调老平台 |
 | GET | `/api/v1/dashboard/summary` | 看板汇总 |
 
 Swagger UI: `http://localhost:8081/docs`
+
+## 代码结构
+
+- `controller`：按充值、收单、归集、平衡、提现等功能拆分控制器。
+- `service`：业务编排、权限校验，以及写操作转调旧平台 API。
+- `repository`：共享数据库的只读查询。
+- `model`：领域实体；`common` 放分页和统一异常等通用对象。
+- `config`、`security`、`client`：环境配置、安全认证和旧平台客户端。
+- `application-dev.yml`、`application-test.yml`、`application-prod.yml`：开发、测试、生产环境配置。
 
 分页统一使用从 0 开始的 `page`、`size`，最大每页 200 条。时间筛选使用 ISO-8601 本地时间，例如 `2026-10-01T00:00:00`，区间为 `[from, to)`。
 

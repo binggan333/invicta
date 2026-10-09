@@ -1,0 +1,23 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/utcpay_test?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC}
+    username: ${DB_USERNAME:invicta_readonly}
+    password: ${DB_PASSWORD:change-me}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      read-only: true
+      maximum-pool-size: 3
+      minimum-idle: 0
+  mail:
+    host: ${MAIL_HOST:127.0.0.1}
+    port: ${MAIL_PORT:1025}
+
+invicta:
+  mail:
+    enabled: ${INVICTA_MAIL_ENABLED:false}
+  legacy-api:
+    base-url: ${LEGACY_API_BASE_URL:http://127.0.0.1:8080}
+
+logging:
+  level:
+    com.invicta: INFO
