@@ -33,7 +33,7 @@ Swagger UI: `http://localhost:8081/docs`
 ## 代码结构
 
 - `controller`：按充值、收单、归集、平衡、提现等功能拆分控制器。
-- `service`：业务编排、权限校验，以及写操作转调旧平台 API。
+- `service`：业务接口；`service/impl`：业务实现、权限校验，以及写操作转调旧平台 API。
 - `repository`：共享数据库的只读查询。
 - `model`：领域实体；`common` 放分页和统一异常等通用对象。
 - `config`、`security`、`client`：环境配置、安全认证和旧平台客户端。

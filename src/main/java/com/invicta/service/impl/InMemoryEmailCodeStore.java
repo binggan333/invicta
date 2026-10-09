@@ -1,4 +1,6 @@
-package com.invicta.service;
+package com.invicta.service.impl;
+
+import com.invicta.service.EmailCodeStore;
 
 import org.springframework.stereotype.Component;
 
