@@ -15,17 +15,23 @@ import com.invicta.config.InvictaProperties;
 import com.invicta.model.EmailCodePurpose;
 import com.invicta.model.OrganizationAccount;
 import com.invicta.model.RegistrationRequest;
-import com.invicta.repository.OrganizationAccountRepository;
+import com.invicta.entity.SysOrganEntity;
+import com.invicta.mapper.SysOrganMapper;
 import com.invicta.util.EmailAddressUtils;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.List;
 
 @Service
 public class AuthServiceImpl implements AuthService {
-    private final OrganizationAccountRepository accounts;
+    private final SysOrganMapper organizationMapper;
     private final EmailCodeStore codes;
     private final EmailCodeSender sender;
     private final TokenService tokens;
@@ -33,9 +39,9 @@ public class AuthServiceImpl implements AuthService {
     private final LegacyApiClient legacy;
     private final SecureRandom random = new SecureRandom();
 
-    public AuthServiceImpl(OrganizationAccountRepository accounts, EmailCodeStore codes, EmailCodeSender sender,
+    public AuthServiceImpl(SysOrganMapper organizationMapper, EmailCodeStore codes, EmailCodeSender sender,
                            TokenService tokens, InvictaProperties properties, LegacyApiClient legacy) {
-        this.accounts = accounts;
+        this.organizationMapper = organizationMapper;
         this.codes = codes;
         this.sender = sender;
         this.tokens = tokens;
@@ -65,7 +71,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public TokenService.TokenResponse verify(String email, String code) {
         String normalizedEmail = EmailAddressUtils.normalize(email);
-        OrganizationAccount account = accounts.findActiveByEmail(normalizedEmail)
+        OrganizationAccount account = findActiveByEmail(normalizedEmail)
                 .orElseThrow(AccountUnavailableException::new);
         if (!codes.consume(normalizedEmail, EmailCodePurpose.LOGIN, code)) {
             throw new VerificationCodeInvalidException();
@@ -76,7 +82,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public Object register(RegistrationRequest request) {
         String email = EmailAddressUtils.normalize(request.email());
-        if (accounts.existsByEmail(email)) {
+        if (existsByEmail(email)) {
             throw new EmailAlreadyRegisteredException();
         }
         if (!codes.consume(email, EmailCodePurpose.REGISTRATION, request.code())) {
@@ -96,11 +102,47 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void validatePurpose(String email, EmailCodePurpose purpose) {
-        if (purpose == EmailCodePurpose.LOGIN && accounts.findActiveByEmail(email).isEmpty()) {
+        if (purpose == EmailCodePurpose.LOGIN && findActiveByEmail(email).isEmpty()) {
             throw new AccountUnavailableException();
         }
-        if (purpose == EmailCodePurpose.REGISTRATION && accounts.existsByEmail(email)) {
+        if (purpose == EmailCodePurpose.REGISTRATION && existsByEmail(email)) {
             throw new EmailAlreadyRegisteredException();
         }
+    }
+
+    private Optional<OrganizationAccount> findActiveByEmail(String email) {
+        LambdaQueryWrapper<SysOrganEntity> query = Wrappers.lambdaQuery();
+        query.eq(SysOrganEntity::getOrgEmail, email);
+        query.eq(SysOrganEntity::getOrgState, 0);
+        query.and(item -> item.eq(SysOrganEntity::getIsDelete, false)
+                .or().isNull(SysOrganEntity::getIsDelete));
+
+        List<SysOrganEntity> organizations = organizationMapper.selectList(query);
+        if (organizations.isEmpty()) {
+            return Optional.empty();
+        }
+        SysOrganEntity organization = organizations.get(0);
+        int orgType = organization.getOrgType();
+        return Optional.of(new OrganizationAccount(organization.getOrgId(), organization.getOrgName(),
+                organization.getOrgEmail(), orgType, Set.of(roleFor(orgType))));
+    }
+
+    private boolean existsByEmail(String email) {
+        LambdaQueryWrapper<SysOrganEntity> query = Wrappers.lambdaQuery();
+        query.eq(SysOrganEntity::getOrgEmail, email);
+        query.and(item -> item.eq(SysOrganEntity::getIsDelete, false)
+                .or().isNull(SysOrganEntity::getIsDelete));
+        return organizationMapper.selectCount(query) > 0;
+    }
+
+    private String roleFor(int orgType) {
+        return switch (orgType) {
+            case 0 -> "operator";
+            case 1, 2 -> "agent";
+            case 3 -> "proMerchant";
+            case 4 -> "liteMerchant";
+            case 5 -> "stdMerchant";
+            default -> "organization";
+        };
     }
 }

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.invicta.mapper.OrderBalanceMapper">
+    <select id="selectStatistics" resultType="com.invicta.model.BalanceModels$Statistics">
+        SELECT COUNT(DISTINCT b.id) AS total_count,
+               COALESCE(SUM(CAST(d.amount AS DECIMAL(36, 12))), 0) AS total_amount,
+               COALESCE(SUM(CAST(d.commission_total AS DECIMAL(36, 12))), 0) AS total_commission
+        FROM (
+            SELECT id, balance_id
+            FROM order_balance
+            ${ew.customSqlSegment}
+        ) b
+        LEFT JOIN order_balance_detail d ON d.balance_id = b.balance_id
+    </select>
+</mapper>

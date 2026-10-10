@@ -4,7 +4,6 @@ import com.invicta.model.SummaryModels;
 
 import com.invicta.common.PageQuery;
 import com.invicta.common.PageResponse;
-import com.invicta.repository.SummaryRepository;
 import com.invicta.security.CurrentUser;
 import com.invicta.service.SummaryService;
 import jakarta.validation.constraints.Max;

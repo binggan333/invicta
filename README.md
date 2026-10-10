@@ -4,7 +4,7 @@ Invicta 是基于现有 UTC Pay 数据库的独立统计与看板服务。它是
 
 ## 设计边界
 
-- 直接连接旧平台 MySQL，但连接池和事务管理器都强制只读。
+- 直接连接旧平台 MySQL，连接池使用只读模式。
 - 生产数据库账号必须只授予 `SELECT`；这是防止误写的最终边界。
 - 查询走 Invicta 自己的 `/api/v1` 接口。
 - 新增、更新、删除必须封装为明确的业务服务，并通过 `LegacyApiClient` 调用旧平台 API；禁止通用透传代理。
@@ -39,8 +39,9 @@ Swagger UI: `http://localhost:8081/docs`
 
 - `controller`：按充值、收单、归集、平衡、提现等功能拆分控制器。
 - `service`：业务接口；`service/impl`：业务实现、权限校验，以及写操作转调旧平台 API。
-- `repository`：共享数据库的只读查询。
-- `model`：领域实体；`common` 放分页和统一异常等通用对象。
+- `entity`：与共享数据库表对应的实体；`mapper`：MyBatis-Plus Mapper 接口。
+- 简单单表查询使用 `LambdaQueryWrapper`；统计、聚合和联表等复杂 SQL 放在 `resources/mapper/*.xml`。
+- `model`：接口返回模型；`common` 放分页和统一异常等通用对象。
 - `config`、`security`、`client`：环境配置、安全认证和旧平台客户端。
 - `application-dev.yml`、`application-test.yml`、`application-prod.yml`：开发、测试、生产环境配置。
 

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.invicta.mapper.OrderSummaryMapper">
+    <select id="selectStatistics" resultType="com.invicta.model.SummaryModels$Statistics">
+        SELECT COUNT(DISTINCT s.id) AS total_count,
+               COALESCE(SUM(CAST(d.amount AS DECIMAL(36, 12))), 0) AS total_amount
+        FROM (
+            SELECT id, summary_id
+            FROM order_summary
+            ${ew.customSqlSegment}
+        ) s
+        LEFT JOIN order_summary_detail d ON d.summary_id = s.summary_id
+    </select>
+
+    <select id="selectWalletBalances" resultType="com.invicta.model.SummaryModels$WalletCurrencyBalance">
+        SELECT b.balance_id, b.chain_id, b.wallet_id, b.currency_id, c.symbol,
+               b.balance, b.update_time
+        FROM org_user_chain_walet_currency_balance b
+        JOIN org_user_chain_wallet w ON w.wallet_id = b.wallet_id
+        JOIN org_user u ON u.user_id = w.user_id
+        LEFT JOIN sys_currency c ON c.currency_id = b.currency_id
+        WHERE b.wallet_id = #{walletId}
+          AND u.org_id = #{orgId}
+          AND COALESCE(b.is_delete, 0) = 0
+        ORDER BY b.currency_id
+    </select>
+</mapper>

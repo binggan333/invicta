@@ -27,6 +27,16 @@ springdoc:
   swagger-ui:
     path: /docs
 
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.invicta.entity
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+    db-config:
+      id-type: auto
+
 invicta:
   auth:
     jwt-secret: ${JWT_SECRET:dev-only-change-this-secret-32chars}

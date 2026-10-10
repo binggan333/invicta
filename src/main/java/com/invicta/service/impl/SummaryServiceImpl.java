@@ -4,10 +4,17 @@ import com.invicta.service.SummaryService;
 
 import com.invicta.model.SummaryModels;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.invicta.client.LegacyApiClient;
 import com.invicta.common.PageQuery;
 import com.invicta.common.PageResponse;
-import com.invicta.repository.SummaryRepository;
+import com.invicta.entity.OrderSummaryDetailEntity;
+import com.invicta.entity.OrderSummaryEntity;
+import com.invicta.mapper.OrderSummaryDetailMapper;
+import com.invicta.mapper.OrderSummaryMapper;
 import com.invicta.security.CurrentUser;
 import com.invicta.security.OrganizationAccessPolicy;
 import org.springframework.http.HttpStatus;
@@ -20,12 +27,15 @@ import java.util.Map;
 
 @Service
 public class SummaryServiceImpl implements SummaryService {
-    private final SummaryRepository repository;
+    private final OrderSummaryMapper summaryMapper;
+    private final OrderSummaryDetailMapper detailMapper;
     private final OrganizationAccessPolicy access;
     private final LegacyApiClient legacy;
 
-    public SummaryServiceImpl(SummaryRepository repository, OrganizationAccessPolicy access, LegacyApiClient legacy) {
-        this.repository = repository;
+    public SummaryServiceImpl(OrderSummaryMapper summaryMapper, OrderSummaryDetailMapper detailMapper,
+                              OrganizationAccessPolicy access, LegacyApiClient legacy) {
+        this.summaryMapper = summaryMapper;
+        this.detailMapper = detailMapper;
         this.access = access;
         this.legacy = legacy;
     }
@@ -33,24 +43,41 @@ public class SummaryServiceImpl implements SummaryService {
     public PageResponse<SummaryModels.View> list(CurrentUser user, long orgId, Integer chainId,
             Integer status, String keyword, LocalDateTime from, LocalDateTime to, PageQuery page) {
         access.requireRead(user, orgId);
-        return repository.list(orgId, chainId, status, keyword, from, to, page);
+        LambdaQueryWrapper<OrderSummaryEntity> query = query(orgId, chainId, status, keyword, from, to);
+        query.orderByDesc(OrderSummaryEntity::getCreateTime);
+        IPage<OrderSummaryEntity> result = summaryMapper.selectPage(
+                Page.of(page.page() + 1L, page.size()), query);
+        List<SummaryModels.View> items = result.getRecords().stream().map(this::toView).toList();
+        return PageResponse.of(items, result.getTotal(), page);
     }
 
     public SummaryModels.Detail detail(CurrentUser user, long orgId, long id) {
         access.requireRead(user, orgId);
-        return repository.detail(orgId, id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "error.summary.not-found"));
+        LambdaQueryWrapper<OrderSummaryEntity> query = Wrappers.lambdaQuery();
+        query.eq(OrderSummaryEntity::getId, id);
+        query.eq(OrderSummaryEntity::getOrgId, orgId);
+        notDeleted(query);
+        OrderSummaryEntity order = summaryMapper.selectOne(query);
+        if (order == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "error.summary.not-found");
+        }
+
+        LambdaQueryWrapper<OrderSummaryDetailEntity> detailQuery = Wrappers.lambdaQuery();
+        detailQuery.eq(OrderSummaryDetailEntity::getSummaryId, order.getSummaryId());
+        detailQuery.orderByAsc(OrderSummaryDetailEntity::getId);
+        List<SummaryModels.Line> lines = detailMapper.selectList(detailQuery).stream().map(this::toLine).toList();
+        return new SummaryModels.Detail(toView(order), lines);
     }
 
     public SummaryModels.Statistics statistics(CurrentUser user, long orgId, Integer chainId, Integer status,
             String keyword, LocalDateTime from, LocalDateTime to) {
         access.requireRead(user, orgId);
-        return repository.statistics(orgId, chainId, status, keyword, from, to);
+        return summaryMapper.selectStatistics(query(orgId, chainId, status, keyword, from, to));
     }
 
     public List<SummaryModels.WalletCurrencyBalance> walletCurrencies(CurrentUser user, long orgId, long walletId) {
         access.requireRead(user, orgId);
-        return repository.walletBalances(orgId, walletId);
+        return summaryMapper.selectWalletBalances(orgId, walletId);
     }
 
     public Object create(CurrentUser user, long orgId, Map<String, Object> body) {
@@ -61,5 +88,41 @@ public class SummaryServiceImpl implements SummaryService {
     public Object checkStatus(CurrentUser user, long orgId, Map<String, Object> body) {
         access.requireRead(user, orgId);
         return legacy.post("/summary/updateStatus", body, Object.class);
+    }
+
+    private LambdaQueryWrapper<OrderSummaryEntity> query(long orgId, Integer chainId, Integer status,
+            String keyword, LocalDateTime from, LocalDateTime to) {
+        LambdaQueryWrapper<OrderSummaryEntity> query = Wrappers.lambdaQuery();
+        query.eq(OrderSummaryEntity::getOrgId, orgId);
+        notDeleted(query);
+        query.eq(chainId != null, OrderSummaryEntity::getChainId, chainId);
+        query.eq(status != null, OrderSummaryEntity::getStatus, status);
+        if (keyword != null && !keyword.isBlank()) {
+            String value = keyword.trim();
+            query.and(item -> item.like(OrderSummaryEntity::getSummaryHash, value)
+                    .or().like(OrderSummaryEntity::getSummaryId, value)
+                    .or().apply("FIND_IN_SET({0}, user_wallet_ids)", value));
+        }
+        query.ge(from != null, OrderSummaryEntity::getCreateTime, from);
+        query.lt(to != null, OrderSummaryEntity::getCreateTime, to);
+        return query;
+    }
+
+    private void notDeleted(LambdaQueryWrapper<OrderSummaryEntity> query) {
+        query.and(item -> item.eq(OrderSummaryEntity::getIsDelete, 0)
+                .or().isNull(OrderSummaryEntity::getIsDelete));
+    }
+
+    private SummaryModels.View toView(OrderSummaryEntity entity) {
+        return new SummaryModels.View(entity.getId(), entity.getOrgId(), entity.getChainId(), entity.getChainName(),
+                entity.getWalletId(), entity.getWalletAddrHot(), entity.getWalletAddrCold(), entity.getStatus(),
+                entity.getSummaryHash(), entity.getCreateTime(), entity.getWalletAddrManager(), entity.getManagerId(),
+                entity.getUserWalletIds(), entity.getSummaryType(), entity.getSummaryId());
+    }
+
+    private SummaryModels.Line toLine(OrderSummaryDetailEntity entity) {
+        return new SummaryModels.Line(entity.getId(), entity.getSummaryId(), entity.getUserWalletId(),
+                entity.getUserWalletAddress(), entity.getColdAddress(), entity.getCurrencyId(),
+                entity.getCurrencyAddress(), entity.getAmount(), entity.getLogindex(), entity.getCreateTime());
     }
 }

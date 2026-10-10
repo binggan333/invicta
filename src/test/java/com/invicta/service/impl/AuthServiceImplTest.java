@@ -7,7 +7,8 @@ import com.invicta.common.VerificationCodeInvalidException;
 import com.invicta.config.InvictaProperties;
 import com.invicta.model.EmailCodePurpose;
 import com.invicta.model.OrganizationAccount;
-import com.invicta.repository.OrganizationAccountRepository;
+import com.invicta.entity.SysOrganEntity;
+import com.invicta.mapper.SysOrganMapper;
 import com.invicta.service.EmailCodeSender;
 import com.invicta.service.EmailCodeStore;
 import com.invicta.service.TokenService;
@@ -18,11 +19,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Duration;
-import java.util.Optional;
+import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.doThrow;
@@ -31,7 +33,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceImplTest {
-    @Mock OrganizationAccountRepository accounts;
+    @Mock SysOrganMapper organizations;
     @Mock EmailCodeStore codes;
     @Mock EmailCodeSender sender;
     @Mock TokenService tokens;
@@ -47,13 +49,13 @@ class AuthServiceImplTest {
                         Duration.ofMinutes(1), Duration.ofMinutes(1)),
                 new InvictaProperties.Mail(false, "no-reply@invicta.local"),
                 new InvictaProperties.LegacyApi("http://localhost:8080", ""));
-        service = new AuthServiceImpl(accounts, codes, sender, tokens, properties, legacy);
+        service = new AuthServiceImpl(organizations, codes, sender, tokens, properties, legacy);
         account = new OrganizationAccount(10L, "Example Org", "owner@example.com", 3, Set.of("proMerchant"));
     }
 
     @Test
     void rejectsRepeatedCodeRequestDuringCooldown() {
-        when(accounts.findActiveByEmail("owner@example.com")).thenReturn(Optional.of(account));
+        when(organizations.selectList(any())).thenReturn(List.of(activeOrganization()));
         when(codes.issue(eq("owner@example.com"), eq(EmailCodePurpose.LOGIN), anyString(),
                 eq(Duration.ofMinutes(1)), eq(Duration.ofMinutes(1)))).thenReturn(false);
 
@@ -65,7 +67,7 @@ class AuthServiceImplTest {
 
     @Test
     void expiredOrConsumedCodeCannotLogin() {
-        when(accounts.findActiveByEmail("owner@example.com")).thenReturn(Optional.of(account));
+        when(organizations.selectList(any())).thenReturn(List.of(activeOrganization()));
         when(codes.consume("owner@example.com", EmailCodePurpose.LOGIN, "123456")).thenReturn(false);
 
         assertThatThrownBy(() -> service.verify("owner@example.com", "123456"))
@@ -76,7 +78,7 @@ class AuthServiceImplTest {
 
     @Test
     void releasesCodeAndCooldownWhenEmailDeliveryFails() {
-        when(accounts.findActiveByEmail("owner@example.com")).thenReturn(Optional.of(account));
+        when(organizations.selectList(any())).thenReturn(List.of(activeOrganization()));
         when(codes.issue(eq("owner@example.com"), eq(EmailCodePurpose.LOGIN), anyString(),
                 eq(Duration.ofMinutes(1)), eq(Duration.ofMinutes(1)))).thenReturn(true);
         doThrow(new RuntimeException("SMTP unavailable"))
@@ -85,5 +87,16 @@ class AuthServiceImplTest {
         assertThatThrownBy(() -> service.requestCode("owner@example.com", EmailCodePurpose.LOGIN))
                 .isInstanceOf(EmailDeliveryException.class);
         verify(codes).invalidate("owner@example.com", EmailCodePurpose.LOGIN);
+    }
+
+    private SysOrganEntity activeOrganization() {
+        SysOrganEntity organization = new SysOrganEntity();
+        organization.setOrgId(account.orgId());
+        organization.setOrgName(account.name());
+        organization.setOrgEmail(account.email());
+        organization.setOrgType(account.orgType());
+        organization.setOrgState(0);
+        organization.setIsDelete(false);
+        return organization;
     }
 }

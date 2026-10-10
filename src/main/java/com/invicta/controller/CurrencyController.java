@@ -2,7 +2,6 @@ package com.invicta.controller;
 
 import com.invicta.model.SystemModels;
 
-import com.invicta.repository.SystemRepository;
 import com.invicta.service.CurrencyService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

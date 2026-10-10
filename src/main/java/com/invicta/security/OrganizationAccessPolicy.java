@@ -1,27 +1,29 @@
 package com.invicta.security;
 
 import com.invicta.common.ForbiddenException;
-import org.springframework.jdbc.core.simple.JdbcClient;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.invicta.entity.SysOrganEntity;
+import com.invicta.mapper.SysOrganMapper;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class OrganizationAccessPolicy {
-    private final JdbcClient jdbc;
+    private final SysOrganMapper organizationMapper;
 
-    public OrganizationAccessPolicy(JdbcClient jdbc) {
-        this.jdbc = jdbc;
+    public OrganizationAccessPolicy(SysOrganMapper organizationMapper) {
+        this.organizationMapper = organizationMapper;
     }
 
-    @Transactional(readOnly = true)
     public void requireRead(CurrentUser user, long requestedOrgId) {
         if (user.operator() || user.orgId() == requestedOrgId) return;
         if (user.agent()) {
-            boolean child = jdbc.sql("SELECT COUNT(*) FROM sys_organ WHERE org_id=:orgId AND org_parent_id=:parentId")
-                    .param("orgId", requestedOrgId)
-                    .param("parentId", user.orgId())
-                    .query(Long.class)
-                    .single() > 0;
+            LambdaQueryWrapper<SysOrganEntity> query = Wrappers.lambdaQuery();
+            query.eq(SysOrganEntity::getOrgId, requestedOrgId);
+            query.eq(SysOrganEntity::getOrgParentId, user.orgId());
+            query.and(item -> item.eq(SysOrganEntity::getIsDelete, false)
+                    .or().isNull(SysOrganEntity::getIsDelete));
+            boolean child = organizationMapper.selectCount(query) > 0;
             if (child) return;
         }
         throw new ForbiddenException("You cannot access this organization");
