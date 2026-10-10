@@ -9,14 +9,17 @@ Invicta 是基于现有 UTC Pay 数据库的独立统计与看板服务。它是
 - 查询走 Invicta 自己的 `/api/v1` 接口。
 - 新增、更新、删除必须封装为明确的业务服务，并通过 `LegacyApiClient` 调用旧平台 API；禁止通用透传代理。
 - 登录使用邮箱一次性验证码，JWT 为无状态访问令牌，不再依赖 TronLink 或 MetaMask。
-- 当前验证码存储为单实例内存实现。多实例部署前应替换成 Redis 实现，并增加网关/Redis 频率限制。
+- 老用户按 `sys_organ.org_email` 登录，不使用密码；仅状态正常的机构可以签发 JWT。
+- 验证码和发送冷却均存储在 Redis：有效期 60 秒、同邮箱同用途 60 秒内不可重复发送，验证成功后原子删除且不可复用。
+- 登录验证码与注册验证码按用途隔离。注册通过验证码后转调旧平台注册 API，Invicta 不直接写共享数据库。
 
 ## 已有骨架接口
 
 | Method | Path | 说明 |
 |---|---|---|
-| POST | `/api/v1/auth/email/request-code` | 请求邮箱验证码，响应不会泄露账号是否存在 |
+| POST | `/api/v1/auth/email/request-code` | 请求登录或注册验证码 |
 | POST | `/api/v1/auth/email/verify` | 验证验证码并签发 JWT |
+| POST | `/api/v1/auth/register` | 验证邮箱并将机构注册请求转调旧平台 |
 | GET | `/api/v1/auth/me` | 当前账号 |
 | GET | `/api/v1/organizations` | 机构分页列表 |
 | GET | `/api/v1/chains` | 链列表 |
@@ -76,11 +79,16 @@ FLUSH PRIVILEGES;
 ```bash
 curl -X POST http://localhost:8081/api/v1/auth/email/request-code \
   -H 'Content-Type: application/json' \
-  -d '{"email":"operator@example.com"}'
+  -d '{"email":"operator@example.com","purpose":"LOGIN"}'
 
 curl -X POST http://localhost:8081/api/v1/auth/email/verify \
   -H 'Content-Type: application/json' \
   -d '{"email":"operator@example.com","code":"123456"}'
+
+# 新用户先请求 REGISTRATION 验证码，再提交机构注册资料。
+curl -X POST http://localhost:8081/api/v1/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"new@example.com","code":"123456","type":"INDIVIDUAL","organizationName":"New Org","registrationCode":"INVITE-CODE","chainId":1,"stakeAccount":false,"details":{"walletAddress":""}}'
 
 curl 'http://localhost:8081/api/v1/payments?orgId=100&page=0&size=20' \
   -H 'Authorization: Bearer <token>'
@@ -89,6 +97,6 @@ curl 'http://localhost:8081/api/v1/payments?orgId=100&page=0&size=20' \
 ## 下一步
 
 1. 与旧平台真实库表做集成测试，校准历史字段类型与状态枚举。
-2. 将内存验证码替换为 Redis，并接入正式邮件服务和审计日志。
+2. 接入正式 SMTP 配置，并为验证码发送与登录增加审计日志和网关级限流。
 3. 按 `sys` 控制器清单继续迁移非核心辅助接口；每个写接口建立明确的旧 API 对应关系。
 4. 为高频看板查询增加组合索引、只读副本和缓存，不在首版直接改共享生产库。

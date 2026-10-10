@@ -11,6 +11,13 @@ spring:
   mail:
     host: ${MAIL_HOST:127.0.0.1}
     port: ${MAIL_PORT:1025}
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:1}
+      timeout: 2s
 
 invicta:
   mail:

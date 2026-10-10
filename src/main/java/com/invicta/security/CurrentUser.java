@@ -6,19 +6,19 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-public record CurrentUser(long managerId, long orgId, int managerType, Set<String> roles) {
+public record CurrentUser(long orgId, int orgType, Set<String> roles) {
     public static CurrentUser from(Jwt jwt) {
         Number orgId = jwt.getClaim("orgId");
-        Number managerType = jwt.getClaim("managerType");
+        Number orgType = jwt.getClaim("orgType");
         Set<String> roles = new HashSet<>(Optional.ofNullable(jwt.getClaimAsStringList("roles")).orElseGet(java.util.List::of));
-        return new CurrentUser(Long.parseLong(jwt.getSubject()), orgId.longValue(), managerType.intValue(), roles);
+        return new CurrentUser(orgId.longValue(), orgType.intValue(), roles);
     }
 
     public boolean operator() {
-        return managerType == 0 || roles.contains("operator");
+        return orgType == 0 || roles.contains("operator");
     }
 
     public boolean agent() {
-        return managerType == 3 || roles.contains("agent");
+        return orgType == 1 || orgType == 2 || roles.contains("agent");
     }
 }

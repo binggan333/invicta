@@ -3,7 +3,7 @@ package com.invicta.service.impl;
 import com.invicta.service.TokenService;
 
 import com.invicta.config.InvictaProperties;
-import com.invicta.model.ManagerAccount;
+import com.invicta.model.OrganizationAccount;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
@@ -23,18 +23,18 @@ public class TokenServiceImpl implements TokenService {
     }
 
     @Override
-    public TokenResponse issue(ManagerAccount account) {
+    public TokenResponse issue(OrganizationAccount account) {
         Instant now = Instant.now();
         Instant expiresAt = now.plus(properties.auth().tokenTtl());
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer("invicta")
                 .issuedAt(now)
                 .expiresAt(expiresAt)
-                .subject(Long.toString(account.id()))
+                .subject(Long.toString(account.orgId()))
                 .claim("email", account.email())
                 .claim("name", account.name())
                 .claim("orgId", account.orgId())
-                .claim("managerType", account.managerType())
+                .claim("orgType", account.orgType())
                 .claim("roles", List.copyOf(account.roles()))
                 .build();
         String token = encoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();

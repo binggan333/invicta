@@ -2,9 +2,12 @@ package com.invicta.controller;
 
 import com.invicta.service.AuthService;
 import com.invicta.service.TokenService;
+import com.invicta.model.EmailCodePurpose;
+import com.invicta.model.RegistrationRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,8 +28,8 @@ public class AuthController {
     @PostMapping("/email/request-code")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public Map<String, String> requestCode(@Valid @RequestBody RequestCode request) {
-        authService.requestCode(request.email());
-        return Map.of("message", "If the account exists, a login code has been sent");
+        authService.requestCode(request.email(), request.purpose());
+        return Map.of("message", "验证码已发送");
     }
 
     @PostMapping("/email/verify")
@@ -34,19 +37,26 @@ public class AuthController {
         return authService.verify(request.email(), request.code());
     }
 
+    @PostMapping("/register")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Object register(@Valid @RequestBody RegistrationRequest request) {
+        return authService.register(request);
+    }
+
     @GetMapping("/me")
     public Map<String, Object> me(@AuthenticationPrincipal Jwt jwt) {
         return Map.of(
-                "managerId", Long.parseLong(jwt.getSubject()),
+                "accountId", Long.parseLong(jwt.getSubject()),
                 "email", jwt.getClaimAsString("email"),
                 "name", jwt.getClaimAsString("name"),
                 "orgId", jwt.getClaim("orgId"),
-                "managerType", jwt.getClaim("managerType"),
+                "orgType", jwt.getClaim("orgType"),
                 "roles", jwt.getClaimAsStringList("roles")
         );
     }
 
-    public record RequestCode(@NotBlank @Email String email) {}
+    public record RequestCode(@NotBlank @Email String email,
+                              @NotNull EmailCodePurpose purpose) {}
     public record VerifyCode(@NotBlank @Email String email,
                              @NotBlank @Pattern(regexp = "\\d{6}") String code) {}
 }

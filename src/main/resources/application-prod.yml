@@ -15,6 +15,21 @@ spring:
     port: ${MAIL_PORT:587}
     username: ${MAIL_USERNAME}
     password: ${MAIL_PASSWORD}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: ${MAIL_STARTTLS:true}
+      mail.smtp.connectiontimeout: ${MAIL_CONNECTION_TIMEOUT:5000}
+      mail.smtp.timeout: ${MAIL_TIMEOUT:5000}
+      mail.smtp.writetimeout: ${MAIL_WRITE_TIMEOUT:5000}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+      database: ${REDIS_DATABASE:0}
+      timeout: ${REDIS_TIMEOUT:2s}
+      ssl:
+        enabled: ${REDIS_SSL:false}
 
 invicta:
   auth:
