@@ -32,7 +32,7 @@ public class OrganizationAccountRepository {
                 .list();
         if (accounts.isEmpty()) return Optional.empty();
 
-        AccountRow row = accounts.getFirst();
+        AccountRow row = accounts.get(0);
         return Optional.of(new OrganizationAccount(row.orgId(), row.orgName(), row.orgEmail(), row.orgType(),
                 Set.of(roleFor(row.orgType()))));
     }

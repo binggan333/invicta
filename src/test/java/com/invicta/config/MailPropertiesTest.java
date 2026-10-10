@@ -24,8 +24,8 @@ class MailPropertiesTest {
             MailProperties properties = context.getBean(MailProperties.class);
 
             assertThat(properties.configs()).hasSize(1);
-            assertThat(properties.configs().getFirst().username()).isEqualTo("sender@example.com");
-            assertThat(properties.configs().getFirst().properties().getProperty("mail.smtp.auth"))
+            assertThat(properties.configs().get(0).username()).isEqualTo("sender@example.com");
+            assertThat(properties.configs().get(0).properties().getProperty("mail.smtp.auth"))
                     .isEqualTo("true");
         });
     }

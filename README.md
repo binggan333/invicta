@@ -48,7 +48,7 @@ Swagger UI: `http://localhost:8081/docs`
 
 ## 本地启动
 
-要求 Java 21、Maven 3.9+ 和 MySQL 8：
+要求 Java 17、Maven 3.9+ 和 MySQL 8：
 
 ```bash
 cp .env.example .env

@@ -39,7 +39,7 @@ public class EmailCodeSenderImpl implements EmailCodeSender {
             log.info("Development login code for {} is {}", EmailAddressUtils.mask(email), code);
             return;
         }
-        JavaMailSenderImpl sender = senders.getFirst();
+        JavaMailSenderImpl sender = senders.get(0);
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(sender.getUsername());
         message.setTo(email);
