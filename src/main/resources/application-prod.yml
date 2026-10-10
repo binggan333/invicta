@@ -10,17 +10,6 @@ spring:
       minimum-idle: ${DB_MIN_IDLE:5}
       connection-timeout: 5000
       validation-timeout: 3000
-  mail:
-    host: ${MAIL_HOST}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail.smtp.auth: true
-      mail.smtp.starttls.enable: ${MAIL_STARTTLS:true}
-      mail.smtp.connectiontimeout: ${MAIL_CONNECTION_TIMEOUT:5000}
-      mail.smtp.timeout: ${MAIL_TIMEOUT:5000}
-      mail.smtp.writetimeout: ${MAIL_WRITE_TIMEOUT:5000}
   data:
     redis:
       host: ${REDIS_HOST}
@@ -36,9 +25,24 @@ invicta:
     jwt-secret: ${JWT_SECRET}
   mail:
     enabled: true
-    from: ${MAIL_FROM}
   legacy-api:
     base-url: ${LEGACY_API_BASE_URL}
+
+mail:
+  configs:
+    - host: ${MAIL_HOST:smtp.gmail.com}
+      port: ${MAIL_PORT:465}
+      username: ${MAIL_USERNAME}
+      password: ${MAIL_PASSWORD}
+      default-encoding: UTF-8
+      properties:
+        mail.smtp.auth: ${MAIL_SMTP_AUTH:true}
+        mail.smtp.socketFactory.port: ${MAIL_PORT:465}
+        mail.smtp.socketFactory.class: javax.net.ssl.SSLSocketFactory
+        mail.smtp.socketFactory.fallback: false
+        mail.smtp.connectiontimeout: ${MAIL_CONNECTION_TIMEOUT:5000}
+        mail.smtp.timeout: ${MAIL_TIMEOUT:5000}
+        mail.smtp.writetimeout: ${MAIL_WRITE_TIMEOUT:5000}
 
 logging:
   level:

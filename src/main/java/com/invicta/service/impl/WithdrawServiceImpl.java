@@ -39,7 +39,7 @@ public class WithdrawServiceImpl implements WithdrawService {
     public OrderModels.WithdrawView detail(CurrentUser user, long orgId, long id) {
         access.requireRead(user, orgId);
         return repository.withdraw(orgId, id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Withdraw not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "error.withdraw.not-found"));
     }
 
     public OrderModels.Statistics statistics(CurrentUser user, long orgId, Integer chainId,

@@ -2,6 +2,7 @@ package com.invicta.service.impl;
 
 import com.invicta.client.LegacyApiClient;
 import com.invicta.common.TooManyCodeRequestsException;
+import com.invicta.common.EmailDeliveryException;
 import com.invicta.common.VerificationCodeInvalidException;
 import com.invicta.config.InvictaProperties;
 import com.invicta.model.EmailCodePurpose;
@@ -24,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -70,5 +72,18 @@ class AuthServiceImplTest {
                 .isInstanceOf(VerificationCodeInvalidException.class)
                 .hasMessage("验证码已失效");
         verify(tokens, never()).issue(account);
+    }
+
+    @Test
+    void releasesCodeAndCooldownWhenEmailDeliveryFails() {
+        when(accounts.findActiveByEmail("owner@example.com")).thenReturn(Optional.of(account));
+        when(codes.issue(eq("owner@example.com"), eq(EmailCodePurpose.LOGIN), anyString(),
+                eq(Duration.ofMinutes(1)), eq(Duration.ofMinutes(1)))).thenReturn(true);
+        doThrow(new RuntimeException("SMTP unavailable"))
+                .when(sender).send(eq("owner@example.com"), anyString());
+
+        assertThatThrownBy(() -> service.requestCode("owner@example.com", EmailCodePurpose.LOGIN))
+                .isInstanceOf(EmailDeliveryException.class);
+        verify(codes).invalidate("owner@example.com", EmailCodePurpose.LOGIN);
     }
 }

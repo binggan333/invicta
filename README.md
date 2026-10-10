@@ -12,6 +12,8 @@ Invicta 是基于现有 UTC Pay 数据库的独立统计与看板服务。它是
 - 老用户按 `sys_organ.org_email` 登录，不使用密码；仅状态正常的机构可以签发 JWT。
 - 验证码和发送冷却均存储在 Redis：有效期 60 秒、同邮箱同用途 60 秒内不可重复发送，验证成功后原子删除且不可复用。
 - 登录验证码与注册验证码按用途隔离。注册通过验证码后转调旧平台注册 API，Invicta 不直接写共享数据库。
+- 页面提示支持中英文，通过 `Accept-Language` 请求头或 `lang` 查询参数选择；未指定时默认英文。
+- 邮件账号使用与 UTC Pay 一致的 `mail.configs` 配置结构，SMTP 密码只通过环境变量或部署密钥注入。
 
 ## 已有骨架接口
 
@@ -62,6 +64,25 @@ docker compose up --build
 
 开发环境 `INVICTA_MAIL_ENABLED=false` 时，验证码会写入应用日志（邮箱会脱敏）。生产环境必须启用 SMTP，并设置强随机 `JWT_SECRET`。
 
+生产邮件配置沿用 UTC Pay 的账号结构。当前验证码邮件使用配置列表中的第一个发送账号：
+
+```yaml
+mail:
+  configs:
+    - host: ${MAIL_HOST:smtp.gmail.com}
+      port: ${MAIL_PORT:465}
+      username: ${MAIL_USERNAME}
+      password: ${MAIL_PASSWORD}
+      default-encoding: UTF-8
+      properties:
+        mail.smtp.auth: true
+        mail.smtp.socketFactory.port: 465
+        mail.smtp.socketFactory.class: javax.net.ssl.SSLSocketFactory
+        mail.smtp.socketFactory.fallback: false
+```
+
+不要把 UTC Pay 现有邮箱密码复制到 Git；部署时为 Invicta 设置相同的邮箱环境变量即可。
+
 ## 只读数据库账号
 
 请由 DBA 在对应环境执行，库名和来源网段按实际情况收紧：
@@ -78,6 +99,7 @@ FLUSH PRIVILEGES;
 
 ```bash
 curl -X POST http://localhost:8081/api/v1/auth/email/request-code \
+  -H 'Accept-Language: zh-CN' \
   -H 'Content-Type: application/json' \
   -d '{"email":"operator@example.com","purpose":"LOGIN"}'
 
@@ -94,9 +116,11 @@ curl 'http://localhost:8081/api/v1/payments?orgId=100&page=0&size=20' \
   -H 'Authorization: Bearer <token>'
 ```
 
+也可以使用 `?lang=zh-CN` 或 `?lang=en-US`。错误响应中的 `code` 始终保持不变，只有给页面展示的 `message` 和校验详情会随语言变化。
+
 ## 下一步
 
 1. 与旧平台真实库表做集成测试，校准历史字段类型与状态枚举。
-2. 接入正式 SMTP 配置，并为验证码发送与登录增加审计日志和网关级限流。
+2. 为验证码校验增加失败次数限制，并在网关按 IP、邮箱和设备维度限流及记录安全审计。
 3. 按 `sys` 控制器清单继续迁移非核心辅助接口；每个写接口建立明确的旧 API 对应关系。
 4. 为高频看板查询增加组合索引、只读副本和缓存，不在首版直接改共享生产库。

@@ -38,7 +38,7 @@ public class BalanceServiceImpl implements BalanceService {
     public BalanceModels.Detail detail(CurrentUser user, long orgId, long id) {
         access.requireRead(user, orgId);
         return repository.detail(orgId, id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Balance order not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "error.balance.not-found"));
     }
 
     public BalanceModels.Statistics statistics(CurrentUser user, long orgId, Integer chainId, Integer status,

@@ -34,7 +34,7 @@ public class RechargeServiceImpl implements RechargeService {
     public OrderModels.RechargeView detail(CurrentUser user, long orgId, long id) {
         access.requireRead(user, orgId);
         return repository.recharge(orgId, id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Recharge not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "error.recharge.not-found"));
     }
 
     public OrderModels.Statistics statistics(CurrentUser user, long orgId, Integer chainId,

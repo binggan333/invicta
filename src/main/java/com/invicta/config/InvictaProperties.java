@@ -7,6 +7,6 @@ import java.time.Duration;
 @ConfigurationProperties(prefix = "invicta")
 public record InvictaProperties(Auth auth, Mail mail, LegacyApi legacyApi) {
     public record Auth(String jwtSecret, Duration tokenTtl, Duration codeTtl, Duration codeCooldown) {}
-    public record Mail(boolean enabled, String from) {}
+    public record Mail(boolean enabled, String appName) {}
     public record LegacyApi(String baseUrl, String token) {}
 }

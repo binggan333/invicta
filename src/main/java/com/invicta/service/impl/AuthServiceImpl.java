@@ -8,6 +8,7 @@ import com.invicta.service.TokenService;
 import com.invicta.client.LegacyApiClient;
 import com.invicta.common.AccountUnavailableException;
 import com.invicta.common.EmailAlreadyRegisteredException;
+import com.invicta.common.EmailDeliveryException;
 import com.invicta.common.TooManyCodeRequestsException;
 import com.invicta.common.VerificationCodeInvalidException;
 import com.invicta.config.InvictaProperties;
@@ -57,7 +58,7 @@ public class AuthServiceImpl implements AuthService {
             sender.send(normalizedEmail, code);
         } catch (RuntimeException exception) {
             codes.invalidate(normalizedEmail, purpose);
-            throw exception;
+            throw new EmailDeliveryException(exception);
         }
     }
 

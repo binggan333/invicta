@@ -8,9 +8,6 @@ spring:
       read-only: true
       maximum-pool-size: 3
       minimum-idle: 0
-  mail:
-    host: ${MAIL_HOST:127.0.0.1}
-    port: ${MAIL_PORT:1025}
   data:
     redis:
       host: ${REDIS_HOST:127.0.0.1}
@@ -24,6 +21,16 @@ invicta:
     enabled: ${INVICTA_MAIL_ENABLED:false}
   legacy-api:
     base-url: ${LEGACY_API_BASE_URL:http://127.0.0.1:8080}
+
+mail:
+  configs:
+    - host: ${MAIL_HOST:127.0.0.1}
+      port: ${MAIL_PORT:1025}
+      username: ${MAIL_USERNAME:no-reply@invicta.local}
+      password: ${MAIL_PASSWORD:}
+      default-encoding: UTF-8
+      properties:
+        mail.smtp.auth: ${MAIL_SMTP_AUTH:false}
 
 logging:
   level:

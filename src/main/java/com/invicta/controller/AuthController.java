@@ -9,6 +9,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -20,16 +22,19 @@ import java.util.Map;
 @RequestMapping("/api/v1/auth")
 public class AuthController {
     private final AuthService authService;
+    private final MessageSource messages;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, MessageSource messages) {
         this.authService = authService;
+        this.messages = messages;
     }
 
     @PostMapping("/email/request-code")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public Map<String, String> requestCode(@Valid @RequestBody RequestCode request) {
         authService.requestCode(request.email(), request.purpose());
-        return Map.of("message", "验证码已发送");
+        return Map.of("message", messages.getMessage("response.verification-code-sent", null,
+                LocaleContextHolder.getLocale()));
     }
 
     @PostMapping("/email/verify")
@@ -55,8 +60,13 @@ public class AuthController {
         );
     }
 
-    public record RequestCode(@NotBlank @Email String email,
-                              @NotNull EmailCodePurpose purpose) {}
-    public record VerifyCode(@NotBlank @Email String email,
-                             @NotBlank @Pattern(regexp = "\\d{6}") String code) {}
+    public record RequestCode(
+            @NotBlank(message = "{validation.email.required}")
+            @Email(message = "{validation.email.invalid}") String email,
+            @NotNull(message = "{validation.purpose.required}") EmailCodePurpose purpose) {}
+    public record VerifyCode(
+            @NotBlank(message = "{validation.email.required}")
+            @Email(message = "{validation.email.invalid}") String email,
+            @NotBlank(message = "{validation.code.required}")
+            @Pattern(regexp = "\\d{6}", message = "{validation.code.invalid}") String code) {}
 }

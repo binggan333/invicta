@@ -34,7 +34,7 @@ public class PaymentServiceImpl implements PaymentService {
     public OrderModels.PaymentView detail(CurrentUser user, long orgId, long paymentId) {
         access.requireRead(user, orgId);
         return repository.payment(orgId, paymentId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Payment not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "error.payment.not-found"));
     }
 
     public OrderModels.Statistics statistics(CurrentUser user, long orgId, Integer chainId,

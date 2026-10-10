@@ -39,7 +39,7 @@ public class SummaryServiceImpl implements SummaryService {
     public SummaryModels.Detail detail(CurrentUser user, long orgId, long id) {
         access.requireRead(user, orgId);
         return repository.detail(orgId, id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Summary not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "error.summary.not-found"));
     }
 
     public SummaryModels.Statistics statistics(CurrentUser user, long orgId, Integer chainId, Integer status,
