@@ -4,6 +4,7 @@ import com.invicta.client.LegacyApiClient;
 import com.invicta.common.TooManyCodeRequestsException;
 import com.invicta.common.EmailDeliveryException;
 import com.invicta.common.VerificationCodeInvalidException;
+import com.invicta.common.InvalidCredentialsException;
 import com.invicta.config.InvictaProperties;
 import com.invicta.model.EmailCodePurpose;
 import com.invicta.model.OrganizationAccount;
@@ -17,6 +18,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Duration;
 import java.util.List;
@@ -41,6 +44,7 @@ class AuthServiceImplTest {
 
     private AuthServiceImpl service;
     private OrganizationAccount account;
+    private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() {
@@ -49,8 +53,10 @@ class AuthServiceImplTest {
                         Duration.ofMinutes(1), Duration.ofMinutes(1)),
                 new InvictaProperties.Mail(false, "no-reply@invicta.local"),
                 new InvictaProperties.LegacyApi("http://localhost:8080", ""));
-        service = new AuthServiceImpl(organizations, codes, sender, tokens, properties, legacy);
-        account = new OrganizationAccount(10L, "Example Org", "owner@example.com", 3, Set.of("proMerchant"));
+        passwordEncoder = new BCryptPasswordEncoder(4);
+        service = new AuthServiceImpl(organizations, codes, sender, tokens, properties, legacy, passwordEncoder);
+        account = new OrganizationAccount(10L, "Example Org", "owner@example.com", 3, true,
+                Set.of("proMerchant"));
     }
 
     @Test
@@ -89,12 +95,35 @@ class AuthServiceImplTest {
         verify(codes).invalidate("owner@example.com", EmailCodePurpose.LOGIN);
     }
 
+    @Test
+    void logsInWithNormalizedEmailAndPassword() {
+        SysOrganEntity organization = activeOrganization();
+        organization.setPasswordHash(passwordEncoder.encode("StrongPass123"));
+        when(organizations.selectList(any())).thenReturn(List.of(organization));
+
+        service.loginWithPassword(" OWNER@example.com ", "StrongPass123");
+
+        verify(tokens).issue(account);
+    }
+
+    @Test
+    void rejectsWrongPasswordWithoutIssuingToken() {
+        SysOrganEntity organization = activeOrganization();
+        organization.setPasswordHash(passwordEncoder.encode("StrongPass123"));
+        when(organizations.selectList(any())).thenReturn(List.of(organization));
+
+        assertThatThrownBy(() -> service.loginWithPassword("owner@example.com", "wrong-password"))
+                .isInstanceOf(InvalidCredentialsException.class);
+        verify(tokens, never()).issue(any());
+    }
+
     private SysOrganEntity activeOrganization() {
         SysOrganEntity organization = new SysOrganEntity();
         organization.setOrgId(account.orgId());
         organization.setOrgName(account.name());
-        organization.setOrgEmail(account.email());
+        organization.setEmail(account.email());
         organization.setOrgType(account.orgType());
+        organization.setProfileCompleted(true);
         organization.setOrgState(0);
         organization.setIsDelete(false);
         return organization;

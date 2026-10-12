@@ -68,6 +68,12 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.NOT_FOUND, "account_unavailable", message("error.account-unavailable"), Map.of());
     }
 
+    @ExceptionHandler(InvalidCredentialsException.class)
+    ResponseEntity<ApiError> invalidCredentials(InvalidCredentialsException exception) {
+        return error(HttpStatus.UNAUTHORIZED, "invalid_credentials",
+                message("error.invalid-credentials"), Map.of());
+    }
+
     @ExceptionHandler(EmailAlreadyRegisteredException.class)
     ResponseEntity<ApiError> emailAlreadyRegistered(EmailAlreadyRegisteredException exception) {
         return error(HttpStatus.CONFLICT, "email_already_registered",

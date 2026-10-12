@@ -1,6 +1,7 @@
 package com.invicta.config;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -9,6 +10,9 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 import javax.crypto.SecretKey;
@@ -23,9 +27,17 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/email/**", "/api/v1/auth/register",
+                        .requestMatchers("/api/v1/auth/email/**", "/api/v1/auth/password/login",
+                                "/api/v1/auth/register",
                                 "/actuator/health/**", "/v3/api-docs/**", "/docs/**", "/docs").permitAll()
-                        .anyRequest().authenticated())
+                        .requestMatchers("/api/v1/auth/me", "/api/v1/auth/profile").authenticated()
+                        .anyRequest().access((authentication, context) -> {
+                            if (authentication.get() instanceof JwtAuthenticationToken token) {
+                                return new AuthorizationDecision(Boolean.TRUE.equals(
+                                        token.getToken().getClaim("profileCompleted")));
+                            }
+                            return new AuthorizationDecision(false);
+                        }))
                 .oauth2ResourceServer(resource -> resource.jwt(jwt -> {}))
                 .build();
     }
@@ -47,5 +59,10 @@ public class SecurityConfig {
     @Bean
     JwtEncoder jwtEncoder(SecretKey secretKey) {
         return new NimbusJwtEncoder(new ImmutableSecret<>(secretKey));
+    }
+
+    @Bean
+    PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder(12);
     }
 }

@@ -3,12 +3,14 @@ package com.invicta.controller;
 import com.invicta.service.AuthService;
 import com.invicta.service.TokenService;
 import com.invicta.model.EmailCodePurpose;
+import com.invicta.model.OrganizationProfileRequest;
 import com.invicta.model.RegistrationRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
@@ -42,10 +44,21 @@ public class AuthController {
         return authService.verify(request.email(), request.code());
     }
 
+    @PostMapping("/password/login")
+    public TokenService.TokenResponse passwordLogin(@Valid @RequestBody PasswordLogin request) {
+        return authService.loginWithPassword(request.email(), request.password());
+    }
+
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
-    public Object register(@Valid @RequestBody RegistrationRequest request) {
+    public TokenService.TokenResponse register(@Valid @RequestBody RegistrationRequest request) {
         return authService.register(request);
+    }
+
+    @PutMapping("/profile")
+    public TokenService.TokenResponse completeProfile(@AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody OrganizationProfileRequest request) {
+        return authService.completeProfile(Long.parseLong(jwt.getSubject()), request);
     }
 
     @GetMapping("/me")
@@ -56,6 +69,7 @@ public class AuthController {
                 "name", jwt.getClaimAsString("name"),
                 "orgId", jwt.getClaim("orgId"),
                 "orgType", jwt.getClaim("orgType"),
+                "profileCompleted", jwt.getClaim("profileCompleted"),
                 "roles", jwt.getClaimAsStringList("roles")
         );
     }
@@ -69,4 +83,9 @@ public class AuthController {
             @Email(message = "{validation.email.invalid}") String email,
             @NotBlank(message = "{validation.code.required}")
             @Pattern(regexp = "\\d{6}", message = "{validation.code.invalid}") String code) {}
+    public record PasswordLogin(
+            @NotBlank(message = "{validation.email.required}")
+            @Email(message = "{validation.email.invalid}") String email,
+            @NotBlank(message = "{validation.password.required}")
+            @Size(min = 8, max = 72, message = "{validation.password.size}") String password) {}
 }

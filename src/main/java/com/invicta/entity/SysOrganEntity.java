@@ -14,6 +14,9 @@ public class SysOrganEntity {
     private Long orgId;
     private String orgName;
     private String orgEmail;
+    private String email;
+    private String passwordHash;
+    private Boolean profileCompleted;
     private String orgPhone;
     private Integer orgType;
     private Long orgParentId;

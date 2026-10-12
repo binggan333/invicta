@@ -8,10 +8,12 @@ Invicta 是基于现有 UTC Pay 数据库的独立统计与看板服务。它是
 - 生产数据库账号必须只授予 `SELECT`；这是防止误写的最终边界。
 - 查询走 Invicta 自己的 `/api/v1` 接口。
 - 新增、更新、删除必须封装为明确的业务服务，并通过 `LegacyApiClient` 调用旧平台 API；禁止通用透传代理。
-- 登录使用邮箱一次性验证码，JWT 为无状态访问令牌，不再依赖 TronLink 或 MetaMask。
-- 老用户按 `sys_organ.org_email` 登录，不使用密码；仅状态正常的机构可以签发 JWT。
+- 登录使用唯一的 `sys_organ.email`，支持邮箱验证码或密码，JWT 为无状态访问令牌，不再依赖 TronLink 或 MetaMask。
+- 密码使用 BCrypt 存储；Invicta 只读数据库，注册和资料更新均通过旧平台的专用 API 完成。
+- 历史 `org_email` 只在全表唯一时迁移到新 `email`；重复邮箱保留为空，必须人工确认归属后再补录，避免绑定错误商户。
 - 验证码和发送冷却均存储在 Redis：有效期 60 秒、同邮箱同用途 60 秒内不可重复发送，验证成功后原子删除且不可复用。
-- 登录验证码与注册验证码按用途隔离。注册通过验证码后转调旧平台注册 API，Invicta 不直接写共享数据库。
+- 登录验证码与注册验证码按用途隔离。注册通过验证码后转调旧平台注册 API，并返回仅可完善资料的 JWT。
+- 新账号完成商户名和商户类型（3 专业版、4 轻量版、5 标准版）前，只能访问 `/auth/me` 和 `/auth/profile`。
 - 页面提示支持中英文，通过 `Accept-Language` 请求头或 `lang` 查询参数选择；未指定时默认英文。
 - 邮件账号使用与 UTC Pay 一致的 `mail.configs` 配置结构，SMTP 密码只通过环境变量或部署密钥注入。
 
@@ -21,7 +23,9 @@ Invicta 是基于现有 UTC Pay 数据库的独立统计与看板服务。它是
 |---|---|---|
 | POST | `/api/v1/auth/email/request-code` | 请求登录或注册验证码 |
 | POST | `/api/v1/auth/email/verify` | 验证验证码并签发 JWT |
-| POST | `/api/v1/auth/register` | 验证邮箱并将机构注册请求转调旧平台 |
+| POST | `/api/v1/auth/password/login` | 使用邮箱和密码登录 |
+| POST | `/api/v1/auth/register` | 验证邮箱、设置密码并创建待完善账号 |
+| PUT | `/api/v1/auth/profile` | 填写商户名和商户类型，返回完整权限 JWT |
 | GET | `/api/v1/auth/me` | 当前账号 |
 | GET | `/api/v1/organizations` | 机构分页列表 |
 | GET | `/api/v1/chains` | 链列表 |
@@ -108,10 +112,20 @@ curl -X POST http://localhost:8081/api/v1/auth/email/verify \
   -H 'Content-Type: application/json' \
   -d '{"email":"operator@example.com","code":"123456"}'
 
-# 新用户先请求 REGISTRATION 验证码，再提交机构注册资料。
+# 新用户先请求 REGISTRATION 验证码，再设置密码创建账号。
 curl -X POST http://localhost:8081/api/v1/auth/register \
   -H 'Content-Type: application/json' \
-  -d '{"email":"new@example.com","code":"123456","type":"INDIVIDUAL","organizationName":"New Org","registrationCode":"INVITE-CODE","chainId":1,"stakeAccount":false,"details":{"walletAddress":""}}'
+  -d '{"email":"new@example.com","code":"123456","password":"StrongPass123"}'
+
+# 使用注册响应中的临时 JWT 完善商户资料。
+curl -X PUT http://localhost:8081/api/v1/auth/profile \
+  -H 'Authorization: Bearer <token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"orgName":"New Org","orgType":3}'
+
+curl -X POST http://localhost:8081/api/v1/auth/password/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"new@example.com","password":"StrongPass123"}'
 
 curl 'http://localhost:8081/api/v1/payments?orgId=100&page=0&size=20' \
   -H 'Authorization: Bearer <token>'

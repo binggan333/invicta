@@ -16,7 +16,8 @@ public class LegacyApiClient {
     public LegacyApiClient(RestClient.Builder builder, InvictaProperties properties) {
         RestClient.Builder configured = builder.baseUrl(properties.legacyApi().baseUrl());
         if (properties.legacyApi().token() != null && !properties.legacyApi().token().isBlank()) {
-            configured.defaultHeader("Authorization", "Bearer " + properties.legacyApi().token());
+            // UTC Pay's Shiro filter expects the stored access token itself, without a Bearer prefix.
+            configured.defaultHeader("Authorization", properties.legacyApi().token());
         }
         this.client = configured.build();
     }

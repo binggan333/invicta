@@ -35,6 +35,7 @@ public class TokenServiceImpl implements TokenService {
                 .claim("name", account.name())
                 .claim("orgId", account.orgId())
                 .claim("orgType", account.orgType())
+                .claim("profileCompleted", account.profileCompleted())
                 .claim("roles", List.copyOf(account.roles()))
                 .build();
         String token = encoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
