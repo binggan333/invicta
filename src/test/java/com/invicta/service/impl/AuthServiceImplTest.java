@@ -8,6 +8,7 @@ import com.invicta.common.InvalidCredentialsException;
 import com.invicta.config.InvictaProperties;
 import com.invicta.model.EmailCodePurpose;
 import com.invicta.model.OrganizationAccount;
+import com.invicta.model.RegistrationRequest;
 import com.invicta.entity.SysOrganEntity;
 import com.invicta.mapper.SysOrganMapper;
 import com.invicta.service.EmailCodeSender;
@@ -52,7 +53,7 @@ class AuthServiceImplTest {
                 new InvictaProperties.Auth("a".repeat(32), Duration.ofHours(8),
                         Duration.ofMinutes(1), Duration.ofMinutes(1)),
                 new InvictaProperties.Mail(false, "no-reply@invicta.local"),
-                new InvictaProperties.LegacyApi("http://localhost:8080", ""));
+                new InvictaProperties.LegacyApi("http://localhost:8080", "", "test-key", "test-secret"));
         passwordEncoder = new BCryptPasswordEncoder(4);
         service = new AuthServiceImpl(organizations, codes, sender, tokens, properties, legacy, passwordEncoder);
         account = new OrganizationAccount(10L, "Example Org", "owner@example.com", 3, true,
@@ -115,6 +116,23 @@ class AuthServiceImplTest {
         assertThatThrownBy(() -> service.loginWithPassword("owner@example.com", "wrong-password"))
                 .isInstanceOf(InvalidCredentialsException.class);
         verify(tokens, never()).issue(any());
+    }
+
+    @Test
+    void registrationUsesSignedExternalApiAndReturnsOnboardingToken() {
+        SysOrganEntity organization = activeOrganization();
+        organization.setOrgName("owner@example.com");
+        organization.setOrgType(5);
+        organization.setOrgState(1);
+        organization.setProfileCompleted(false);
+        when(codes.consume("owner@example.com", EmailCodePurpose.REGISTRATION, "123456")).thenReturn(true);
+        when(organizations.selectList(any())).thenReturn(List.of(organization));
+
+        service.register(new RegistrationRequest("OWNER@example.com", "123456", "StrongPass123"));
+
+        verify(legacy).postSigned(eq("/api/invicta/account/register"), any(), eq(Object.class));
+        verify(tokens).issue(new OrganizationAccount(10L, "owner@example.com", "owner@example.com", 5,
+                false, Set.of("onboarding")));
     }
 
     private SysOrganEntity activeOrganization() {

@@ -48,3 +48,5 @@ invicta:
     app-name: ${INVICTA_MAIL_APP_NAME:Invicta}
   legacy-api:
     token: ${LEGACY_API_TOKEN:}
+    api-key: ${LEGACY_API_KEY:}
+    secret-key: ${LEGACY_API_SECRET:}

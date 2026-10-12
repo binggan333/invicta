@@ -112,7 +112,7 @@ public class AuthServiceImpl implements AuthService {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("email", email);
         body.put("password", request.password());
-        legacy.post("/sys/invicta/account/register", body, Object.class);
+        legacy.postSigned("/api/invicta/account/register", body, Object.class);
         SysOrganEntity organization = findActiveByEmail(email).orElseThrow(AccountUnavailableException::new);
         return tokens.issue(toAccount(organization));
     }
@@ -123,7 +123,7 @@ public class AuthServiceImpl implements AuthService {
         body.put("orgId", orgId);
         body.put("orgName", request.orgName().trim());
         body.put("orgType", request.orgType());
-        legacy.put("/sys/invicta/organization/profile", body, Object.class);
+        legacy.postSigned("/api/invicta/organization/profile", body, Object.class);
 
         SysOrganEntity organization = findActiveById(orgId).orElseThrow(AccountUnavailableException::new);
         return tokens.issue(toAccount(organization));
@@ -139,7 +139,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private Optional<SysOrganEntity> findActiveByEmail(String email) {
-        LambdaQueryWrapper<SysOrganEntity> query = activeOrganizationQuery();
+        LambdaQueryWrapper<SysOrganEntity> query = availableLoginAccountQuery();
         query.eq(SysOrganEntity::getEmail, email);
         List<SysOrganEntity> organizations = organizationMapper.selectList(query);
         return organizations.stream().findFirst();
@@ -154,9 +154,22 @@ public class AuthServiceImpl implements AuthService {
     private LambdaQueryWrapper<SysOrganEntity> activeOrganizationQuery() {
         LambdaQueryWrapper<SysOrganEntity> query = Wrappers.lambdaQuery();
         query.eq(SysOrganEntity::getOrgState, 0);
+        notDeleted(query);
+        return query;
+    }
+
+    private LambdaQueryWrapper<SysOrganEntity> availableLoginAccountQuery() {
+        LambdaQueryWrapper<SysOrganEntity> query = Wrappers.lambdaQuery();
+        query.and(item -> item.eq(SysOrganEntity::getOrgState, 0)
+                .or(pending -> pending.eq(SysOrganEntity::getOrgState, 1)
+                        .eq(SysOrganEntity::getProfileCompleted, false)));
+        notDeleted(query);
+        return query;
+    }
+
+    private void notDeleted(LambdaQueryWrapper<SysOrganEntity> query) {
         query.and(item -> item.eq(SysOrganEntity::getIsDelete, false)
                 .or().isNull(SysOrganEntity::getIsDelete));
-        return query;
     }
 
     private boolean existsByEmail(String email) {

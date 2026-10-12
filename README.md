@@ -14,6 +14,8 @@ Invicta 是基于现有 UTC Pay 数据库的独立统计与看板服务。它是
 - 验证码和发送冷却均存储在 Redis：有效期 60 秒、同邮箱同用途 60 秒内不可重复发送，验证成功后原子删除且不可复用。
 - 登录验证码与注册验证码按用途隔离。注册通过验证码后转调旧平台注册 API，并返回仅可完善资料的 JWT。
 - 新账号完成商户名和商户类型（3 专业版、4 轻量版、5 标准版）前，只能访问 `/auth/me` 和 `/auth/profile`。
+- 注册和资料完善调用 UTC Pay 的 `/api/invicta/**` 外部接口，沿用 `X-PAY-KEY`、`X-PAY-SIGN`、`X-PAY-TIMESTAMP` 签名规则。
+- UTC Pay 只允许配置在 `INVICTA_API_KEY` 中的专用 Key 调用上述账号接口；该 Key 还应配置 Invicta 服务器 IP 白名单。
 - 页面提示支持中英文，通过 `Accept-Language` 请求头或 `lang` 查询参数选择；未指定时默认英文。
 - 邮件账号使用与 UTC Pay 一致的 `mail.configs` 配置结构，SMTP 密码只通过环境变量或部署密钥注入。
 
@@ -87,6 +89,18 @@ mail:
 ```
 
 不要把 UTC Pay 现有邮箱密码复制到 Git；部署时为 Invicta 设置相同的邮箱环境变量即可。
+
+调用 UTC Pay 时需要为 Invicta 单独分配一组 API Key/Secret：
+
+```bash
+LEGACY_API_KEY=<invicta专用API Key>
+LEGACY_API_SECRET=<对应Secret Key>
+```
+
+UTC Pay 服务设置相同的 `INVICTA_API_KEY`，用于限制只有这组凭证可以调用
+`/api/invicta/account/register` 和 `/api/invicta/organization/profile`。Secret 只配置在 Invicta，不能提交到代码库。
+
+部署时先执行 UTC Pay 仓库中的 `db/migration/V20261012__add_invicta_auth_fields.sql`，再发布 UTC Pay 和 Invicta。
 
 ## 只读数据库账号
 
