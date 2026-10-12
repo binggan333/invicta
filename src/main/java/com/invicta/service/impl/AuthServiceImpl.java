@@ -146,23 +146,16 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private Optional<SysOrganEntity> findActiveById(long orgId) {
-        LambdaQueryWrapper<SysOrganEntity> query = activeOrganizationQuery();
+        LambdaQueryWrapper<SysOrganEntity> query = availableLoginAccountQuery();
         query.eq(SysOrganEntity::getOrgId, orgId);
         return Optional.ofNullable(organizationMapper.selectOne(query));
-    }
-
-    private LambdaQueryWrapper<SysOrganEntity> activeOrganizationQuery() {
-        LambdaQueryWrapper<SysOrganEntity> query = Wrappers.lambdaQuery();
-        query.eq(SysOrganEntity::getOrgState, 0);
-        notDeleted(query);
-        return query;
     }
 
     private LambdaQueryWrapper<SysOrganEntity> availableLoginAccountQuery() {
         LambdaQueryWrapper<SysOrganEntity> query = Wrappers.lambdaQuery();
         query.and(item -> item.eq(SysOrganEntity::getOrgState, 0)
                 .or(pending -> pending.eq(SysOrganEntity::getOrgState, 1)
-                        .eq(SysOrganEntity::getProfileCompleted, false)));
+                        .isNotNull(SysOrganEntity::getPasswordHash)));
         notDeleted(query);
         return query;
     }
