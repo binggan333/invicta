@@ -5,6 +5,7 @@ import com.invicta.common.TooManyCodeRequestsException;
 import com.invicta.common.EmailDeliveryException;
 import com.invicta.common.VerificationCodeInvalidException;
 import com.invicta.common.InvalidCredentialsException;
+import com.invicta.common.ExistingAccountRequiredException;
 import com.invicta.config.InvictaProperties;
 import com.invicta.model.EmailCodePurpose;
 import com.invicta.model.OrganizationAccount;
@@ -135,6 +136,27 @@ class AuthServiceImplTest {
                 false, Set.of("onboarding")));
     }
 
+    @Test
+    void existingAccountCodeIsIsolatedByOrganizationId() {
+        SysOrganEntity organization = existingOrganization();
+        when(organizations.selectList(any())).thenReturn(List.of(organization));
+        when(codes.issue(eq("existing:10:shared@example.com"), eq(EmailCodePurpose.LOGIN), anyString(),
+                eq(Duration.ofMinutes(1)), eq(Duration.ofMinutes(1)))).thenReturn(true);
+
+        service.requestExistingAccountCode(" Example Org ");
+
+        verify(sender).send(eq("shared@example.com"), anyString());
+    }
+
+    @Test
+    void existingLegacyEmailCannotBeRegisteredAsANewAccount() {
+        when(organizations.selectCount(any())).thenReturn(0L, 1L);
+
+        assertThatThrownBy(() -> service.requestCode("shared@example.com", EmailCodePurpose.REGISTRATION))
+                .isInstanceOf(ExistingAccountRequiredException.class);
+        verify(sender, never()).send(anyString(), anyString());
+    }
+
     private SysOrganEntity activeOrganization() {
         SysOrganEntity organization = new SysOrganEntity();
         organization.setOrgId(account.orgId());
@@ -142,6 +164,18 @@ class AuthServiceImplTest {
         organization.setEmail(account.email());
         organization.setOrgType(account.orgType());
         organization.setProfileCompleted(true);
+        organization.setOrgState(0);
+        organization.setIsDelete(false);
+        return organization;
+    }
+
+    private SysOrganEntity existingOrganization() {
+        SysOrganEntity organization = new SysOrganEntity();
+        organization.setOrgId(10L);
+        organization.setOrgName("Example Org");
+        organization.setOrgEmail("SHARED@example.com");
+        organization.setEmail(null);
+        organization.setOrgType(3);
         organization.setOrgState(0);
         organization.setIsDelete(false);
         return organization;

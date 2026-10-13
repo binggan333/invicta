@@ -44,6 +44,19 @@ public class AuthController {
         return authService.verify(request.email(), request.code());
     }
 
+    @PostMapping("/existing/request-code")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public Map<String, String> requestExistingCode(@Valid @RequestBody ExistingRequestCode request) {
+        authService.requestExistingAccountCode(request.orgName());
+        return Map.of("message", messages.getMessage("response.verification-code-sent", null,
+                LocaleContextHolder.getLocale()));
+    }
+
+    @PostMapping("/existing/verify")
+    public TokenService.TokenResponse verifyExisting(@Valid @RequestBody ExistingVerifyCode request) {
+        return authService.verifyExistingAccount(request.orgName(), request.code());
+    }
+
     @PostMapping("/password/login")
     public TokenService.TokenResponse passwordLogin(@Valid @RequestBody PasswordLogin request) {
         return authService.loginWithPassword(request.email(), request.password());
@@ -88,4 +101,12 @@ public class AuthController {
             @Email(message = "{validation.email.invalid}") String email,
             @NotBlank(message = "{validation.password.required}")
             @Size(min = 8, max = 72, message = "{validation.password.size}") String password) {}
+    public record ExistingRequestCode(
+            @NotBlank(message = "{validation.organization-name.required}")
+            @Size(max = 128, message = "{validation.organization-name.size}") String orgName) {}
+    public record ExistingVerifyCode(
+            @NotBlank(message = "{validation.organization-name.required}")
+            @Size(max = 128, message = "{validation.organization-name.size}") String orgName,
+            @NotBlank(message = "{validation.code.required}")
+            @Pattern(regexp = "\\d{6}", message = "{validation.code.invalid}") String code) {}
 }

@@ -6,7 +6,9 @@ import com.invicta.model.RegistrationRequest;
 
 public interface AuthService {
     void requestCode(String email, EmailCodePurpose purpose);
+    void requestExistingAccountCode(String orgName);
     TokenService.TokenResponse verify(String email, String code);
+    TokenService.TokenResponse verifyExistingAccount(String orgName, String code);
     TokenService.TokenResponse loginWithPassword(String email, String password);
     TokenService.TokenResponse register(RegistrationRequest request);
     TokenService.TokenResponse completeProfile(long orgId, OrganizationProfileRequest request);

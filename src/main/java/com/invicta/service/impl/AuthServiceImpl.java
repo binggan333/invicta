@@ -6,6 +6,8 @@ import com.invicta.client.LegacyApiClient;
 import com.invicta.common.AccountUnavailableException;
 import com.invicta.common.EmailAlreadyRegisteredException;
 import com.invicta.common.EmailDeliveryException;
+import com.invicta.common.ExistingAccountRequiredException;
+import com.invicta.common.ExistingAccountUnavailableException;
 import com.invicta.common.InvalidCredentialsException;
 import com.invicta.common.TooManyCodeRequestsException;
 import com.invicta.common.VerificationCodeInvalidException;
@@ -60,16 +62,28 @@ public class AuthServiceImpl implements AuthService {
         String normalizedEmail = EmailAddressUtils.normalize(email);
         validatePurpose(normalizedEmail, purpose);
 
+        issueCode(normalizedEmail, normalizedEmail, purpose);
+    }
+
+    @Override
+    public void requestExistingAccountCode(String orgName) {
+        SysOrganEntity organization = findExistingAccount(orgName);
+        String email = existingEmail(organization);
+        issueCode(existingIdentity(organization, email), email, EmailCodePurpose.LOGIN);
+    }
+
+    private void issueCode(String identity, String recipient, EmailCodePurpose purpose) {
+
         String code = "%06d".formatted(random.nextInt(1_000_000));
-        boolean issued = codes.issue(normalizedEmail, purpose, code,
+        boolean issued = codes.issue(identity, purpose, code,
                 properties.auth().codeTtl(), properties.auth().codeCooldown());
         if (!issued) {
             throw new TooManyCodeRequestsException();
         }
         try {
-            sender.send(normalizedEmail, code);
+            sender.send(recipient, code);
         } catch (RuntimeException exception) {
-            codes.invalidate(normalizedEmail, purpose);
+            codes.invalidate(identity, purpose);
             throw new EmailDeliveryException(exception);
         }
     }
@@ -84,6 +98,16 @@ public class AuthServiceImpl implements AuthService {
             throw new VerificationCodeInvalidException();
         }
         return tokens.issue(account);
+    }
+
+    @Override
+    public TokenService.TokenResponse verifyExistingAccount(String orgName, String code) {
+        SysOrganEntity organization = findExistingAccount(orgName);
+        String email = existingEmail(organization);
+        if (!codes.consume(existingIdentity(organization, email), EmailCodePurpose.LOGIN, code)) {
+            throw new VerificationCodeInvalidException();
+        }
+        return tokens.issue(toExistingAccount(organization, email));
     }
 
     @Override
@@ -104,6 +128,9 @@ public class AuthServiceImpl implements AuthService {
         validatePassword(request.password());
         if (existsByEmail(email)) {
             throw new EmailAlreadyRegisteredException();
+        }
+        if (existsByLegacyEmail(email)) {
+            throw new ExistingAccountRequiredException();
         }
         if (!codes.consume(email, EmailCodePurpose.REGISTRATION, request.code())) {
             throw new VerificationCodeInvalidException();
@@ -136,6 +163,9 @@ public class AuthServiceImpl implements AuthService {
         if (purpose == EmailCodePurpose.REGISTRATION && existsByEmail(email)) {
             throw new EmailAlreadyRegisteredException();
         }
+        if (purpose == EmailCodePurpose.REGISTRATION && existsByLegacyEmail(email)) {
+            throw new ExistingAccountRequiredException();
+        }
     }
 
     private Optional<SysOrganEntity> findActiveByEmail(String email) {
@@ -149,6 +179,19 @@ public class AuthServiceImpl implements AuthService {
         LambdaQueryWrapper<SysOrganEntity> query = availableLoginAccountQuery();
         query.eq(SysOrganEntity::getOrgId, orgId);
         return Optional.ofNullable(organizationMapper.selectOne(query));
+    }
+
+    private SysOrganEntity findExistingAccount(String orgName) {
+        LambdaQueryWrapper<SysOrganEntity> query = Wrappers.lambdaQuery();
+        query.eq(SysOrganEntity::getOrgName, orgName.trim());
+        query.isNull(SysOrganEntity::getEmail);
+        query.eq(SysOrganEntity::getOrgState, 0);
+        notDeleted(query);
+        List<SysOrganEntity> organizations = organizationMapper.selectList(query);
+        if (organizations.size() != 1) {
+            throw new ExistingAccountUnavailableException();
+        }
+        return organizations.get(0);
     }
 
     private LambdaQueryWrapper<SysOrganEntity> availableLoginAccountQuery() {
@@ -171,12 +214,37 @@ public class AuthServiceImpl implements AuthService {
         return organizationMapper.selectCount(query) > 0;
     }
 
+    private boolean existsByLegacyEmail(String email) {
+        LambdaQueryWrapper<SysOrganEntity> query = Wrappers.lambdaQuery();
+        query.eq(SysOrganEntity::getOrgEmail, email);
+        query.isNull(SysOrganEntity::getEmail);
+        notDeleted(query);
+        return organizationMapper.selectCount(query) > 0;
+    }
+
+    private String existingEmail(SysOrganEntity organization) {
+        if (organization.getOrgEmail() == null || organization.getOrgEmail().isBlank()) {
+            throw new ExistingAccountUnavailableException();
+        }
+        return EmailAddressUtils.normalize(organization.getOrgEmail());
+    }
+
+    private String existingIdentity(SysOrganEntity organization, String email) {
+        return "existing:" + organization.getOrgId() + ':' + email;
+    }
+
     private OrganizationAccount toAccount(SysOrganEntity organization) {
         int orgType = organization.getOrgType() == null ? -1 : organization.getOrgType();
         boolean profileCompleted = Boolean.TRUE.equals(organization.getProfileCompleted());
         String name = profileCompleted ? organization.getOrgName() : organization.getEmail();
         return new OrganizationAccount(organization.getOrgId(), name, organization.getEmail(), orgType,
                 profileCompleted, Set.of(roleFor(orgType, profileCompleted)));
+    }
+
+    private OrganizationAccount toExistingAccount(SysOrganEntity organization, String email) {
+        int orgType = organization.getOrgType() == null ? -1 : organization.getOrgType();
+        return new OrganizationAccount(organization.getOrgId(), organization.getOrgName(), email, orgType,
+                true, Set.of(roleFor(orgType, true)));
     }
 
     private String roleFor(int orgType, boolean profileCompleted) {

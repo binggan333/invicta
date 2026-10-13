@@ -10,7 +10,8 @@ Invicta 是基于现有 UTC Pay 数据库的独立统计与看板服务。它是
 - 新增、更新、删除必须封装为明确的业务服务，并通过 `LegacyApiClient` 调用旧平台 API；禁止通用透传代理。
 - 登录使用唯一的 `sys_organ.email`，支持邮箱验证码或密码，JWT 为无状态访问令牌，不再依赖 TronLink 或 MetaMask。
 - 密码使用 BCrypt 存储；Invicta 只读数据库，注册和资料更新均通过旧平台的专用 API 完成。
-- 历史 `org_email` 只在全表唯一时迁移到新 `email`；重复邮箱保留为空，必须人工确认归属后再补录，避免绑定错误商户。
+- 历史 `org_email` 不迁移到新 `email`。已有商户选择“已有账户登录”，使用商户名定位账号，验证码仍发送到原 `org_email`。
+- 已有账号验证码的 Redis 身份键包含 `orgId`；即使多个商户共用一个历史邮箱，验证码也不会在商户之间复用。
 - 验证码和发送冷却均存储在 Redis：有效期 60 秒、同邮箱同用途 60 秒内不可重复发送，验证成功后原子删除且不可复用。
 - 登录验证码与注册验证码按用途隔离。注册通过验证码后转调旧平台注册 API，并返回仅可完善资料的 JWT。
 - 新账号完成商户名和商户类型（3 专业版、4 轻量版、5 标准版）前，只能访问 `/auth/me` 和 `/auth/profile`。
@@ -25,6 +26,8 @@ Invicta 是基于现有 UTC Pay 数据库的独立统计与看板服务。它是
 |---|---|---|
 | POST | `/api/v1/auth/email/request-code` | 请求登录或注册验证码 |
 | POST | `/api/v1/auth/email/verify` | 验证验证码并签发 JWT |
+| POST | `/api/v1/auth/existing/request-code` | 已有账户按商户名请求验证码 |
+| POST | `/api/v1/auth/existing/verify` | 已有账户按商户名验证并登录 |
 | POST | `/api/v1/auth/password/login` | 使用邮箱和密码登录 |
 | POST | `/api/v1/auth/register` | 验证邮箱、设置密码并创建待完善账号 |
 | PUT | `/api/v1/auth/profile` | 填写商户名和商户类型，返回完整权限 JWT |
@@ -125,6 +128,15 @@ curl -X POST http://localhost:8081/api/v1/auth/email/request-code \
 curl -X POST http://localhost:8081/api/v1/auth/email/verify \
   -H 'Content-Type: application/json' \
   -d '{"email":"operator@example.com","code":"123456"}'
+
+# 历史商户的新 email 字段保持为空，通过商户名进入已有账户登录。
+curl -X POST http://localhost:8081/api/v1/auth/existing/request-code \
+  -H 'Content-Type: application/json' \
+  -d '{"orgName":"Existing Org"}'
+
+curl -X POST http://localhost:8081/api/v1/auth/existing/verify \
+  -H 'Content-Type: application/json' \
+  -d '{"orgName":"Existing Org","code":"123456"}'
 
 # 新用户先请求 REGISTRATION 验证码，再设置密码创建账号。
 curl -X POST http://localhost:8081/api/v1/auth/register \

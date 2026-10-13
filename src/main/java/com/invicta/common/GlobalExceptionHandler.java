@@ -80,6 +80,18 @@ public class GlobalExceptionHandler {
                 message("error.email-already-registered"), Map.of());
     }
 
+    @ExceptionHandler(ExistingAccountRequiredException.class)
+    ResponseEntity<ApiError> existingAccountRequired(ExistingAccountRequiredException exception) {
+        return error(HttpStatus.CONFLICT, "existing_account_required",
+                message("error.existing-account-required"), Map.of());
+    }
+
+    @ExceptionHandler(ExistingAccountUnavailableException.class)
+    ResponseEntity<ApiError> existingAccountUnavailable(ExistingAccountUnavailableException exception) {
+        return error(HttpStatus.NOT_FOUND, "existing_account_unavailable",
+                message("error.existing-account-unavailable"), Map.of());
+    }
+
     @ExceptionHandler(EmailDeliveryException.class)
     ResponseEntity<ApiError> emailDelivery(EmailDeliveryException exception) {
         return error(HttpStatus.SERVICE_UNAVAILABLE, "verification_email_unavailable",
