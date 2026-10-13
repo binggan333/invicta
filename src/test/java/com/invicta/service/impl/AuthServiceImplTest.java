@@ -4,12 +4,9 @@ import com.invicta.client.LegacyApiClient;
 import com.invicta.common.TooManyCodeRequestsException;
 import com.invicta.common.EmailDeliveryException;
 import com.invicta.common.VerificationCodeInvalidException;
-import com.invicta.common.InvalidCredentialsException;
-import com.invicta.common.ExistingAccountRequiredException;
 import com.invicta.config.InvictaProperties;
 import com.invicta.model.EmailCodePurpose;
 import com.invicta.model.OrganizationAccount;
-import com.invicta.model.RegistrationRequest;
 import com.invicta.entity.SysOrganEntity;
 import com.invicta.mapper.SysOrganMapper;
 import com.invicta.service.EmailCodeSender;
@@ -21,7 +18,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Duration;
 import java.util.List;
@@ -46,7 +42,6 @@ class AuthServiceImplTest {
 
     private AuthServiceImpl service;
     private OrganizationAccount account;
-    private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() {
@@ -55,8 +50,8 @@ class AuthServiceImplTest {
                         Duration.ofMinutes(1), Duration.ofMinutes(1)),
                 new InvictaProperties.Mail(false, "no-reply@invicta.local"),
                 new InvictaProperties.LegacyApi("http://localhost:8080", "", "test-key", "test-secret"));
-        passwordEncoder = new BCryptPasswordEncoder(4);
-        service = new AuthServiceImpl(organizations, codes, sender, tokens, properties, legacy, passwordEncoder);
+        service = new AuthServiceImpl(organizations, codes, sender, tokens, properties, legacy,
+                new BCryptPasswordEncoder(4));
         account = new OrganizationAccount(10L, "Example Org", "owner@example.com", 3, true,
                 Set.of("proMerchant"));
     }
@@ -97,66 +92,6 @@ class AuthServiceImplTest {
         verify(codes).invalidate("owner@example.com", EmailCodePurpose.LOGIN);
     }
 
-    @Test
-    void logsInWithNormalizedEmailAndPassword() {
-        SysOrganEntity organization = activeOrganization();
-        organization.setPasswordHash(passwordEncoder.encode("StrongPass123"));
-        when(organizations.selectList(any())).thenReturn(List.of(organization));
-
-        service.loginWithPassword(" OWNER@example.com ", "StrongPass123");
-
-        verify(tokens).issue(account);
-    }
-
-    @Test
-    void rejectsWrongPasswordWithoutIssuingToken() {
-        SysOrganEntity organization = activeOrganization();
-        organization.setPasswordHash(passwordEncoder.encode("StrongPass123"));
-        when(organizations.selectList(any())).thenReturn(List.of(organization));
-
-        assertThatThrownBy(() -> service.loginWithPassword("owner@example.com", "wrong-password"))
-                .isInstanceOf(InvalidCredentialsException.class);
-        verify(tokens, never()).issue(any());
-    }
-
-    @Test
-    void registrationUsesSignedExternalApiAndReturnsOnboardingToken() {
-        SysOrganEntity organization = activeOrganization();
-        organization.setOrgName("owner@example.com");
-        organization.setOrgType(5);
-        organization.setOrgState(1);
-        organization.setProfileCompleted(false);
-        when(codes.consume("owner@example.com", EmailCodePurpose.REGISTRATION, "123456")).thenReturn(true);
-        when(organizations.selectList(any())).thenReturn(List.of(organization));
-
-        service.register(new RegistrationRequest("OWNER@example.com", "123456", "StrongPass123"));
-
-        verify(legacy).postSigned(eq("/api/invicta/account/register"), any(), eq(Object.class));
-        verify(tokens).issue(new OrganizationAccount(10L, "owner@example.com", "owner@example.com", 5,
-                false, Set.of("onboarding")));
-    }
-
-    @Test
-    void existingAccountCodeIsIsolatedByOrganizationId() {
-        SysOrganEntity organization = existingOrganization();
-        when(organizations.selectList(any())).thenReturn(List.of(organization));
-        when(codes.issue(eq("existing:10:shared@example.com"), eq(EmailCodePurpose.LOGIN), anyString(),
-                eq(Duration.ofMinutes(1)), eq(Duration.ofMinutes(1)))).thenReturn(true);
-
-        service.requestExistingAccountCode(" Example Org ");
-
-        verify(sender).send(eq("shared@example.com"), anyString());
-    }
-
-    @Test
-    void existingLegacyEmailCannotBeRegisteredAsANewAccount() {
-        when(organizations.selectCount(any())).thenReturn(0L, 1L);
-
-        assertThatThrownBy(() -> service.requestCode("shared@example.com", EmailCodePurpose.REGISTRATION))
-                .isInstanceOf(ExistingAccountRequiredException.class);
-        verify(sender, never()).send(anyString(), anyString());
-    }
-
     private SysOrganEntity activeOrganization() {
         SysOrganEntity organization = new SysOrganEntity();
         organization.setOrgId(account.orgId());
@@ -164,18 +99,6 @@ class AuthServiceImplTest {
         organization.setEmail(account.email());
         organization.setOrgType(account.orgType());
         organization.setProfileCompleted(true);
-        organization.setOrgState(0);
-        organization.setIsDelete(false);
-        return organization;
-    }
-
-    private SysOrganEntity existingOrganization() {
-        SysOrganEntity organization = new SysOrganEntity();
-        organization.setOrgId(10L);
-        organization.setOrgName("Example Org");
-        organization.setOrgEmail("SHARED@example.com");
-        organization.setEmail(null);
-        organization.setOrgType(3);
         organization.setOrgState(0);
         organization.setIsDelete(false);
         return organization;

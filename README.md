@@ -9,14 +9,14 @@ Invicta 是基于现有 UTC Pay 数据库的独立统计与看板服务。它是
 - 查询走 Invicta 自己的 `/api/v1` 接口。
 - 新增、更新、删除必须封装为明确的业务服务，并通过 `LegacyApiClient` 调用旧平台 API；禁止通用透传代理。
 - 登录使用唯一的 `sys_organ.email`，支持邮箱验证码或密码，JWT 为无状态访问令牌，不再依赖 TronLink 或 MetaMask。
-- 密码使用 BCrypt 存储；Invicta 只读数据库，注册和资料更新均通过旧平台的专用 API 完成。
+- 密码使用 BCrypt 存储；Invicta 只读数据库，注册和资料更新均通过旧平台 API 完成。
 - 历史 `org_email` 不迁移到新 `email`。已有商户选择“已有账户登录”，使用商户名定位账号，验证码仍发送到原 `org_email`。
 - 已有账号验证码的 Redis 身份键包含 `orgId`；即使多个商户共用一个历史邮箱，验证码也不会在商户之间复用。
 - 验证码和发送冷却均存储在 Redis：有效期 60 秒、同邮箱同用途 60 秒内不可重复发送，验证成功后原子删除且不可复用。
 - 登录验证码与注册验证码按用途隔离。注册通过验证码后转调旧平台注册 API，并返回仅可完善资料的 JWT。
 - 新账号完成商户名和商户类型（3 专业版、4 轻量版、5 标准版）前，只能访问 `/auth/me` 和 `/auth/profile`。
 - 注册和资料完善调用 UTC Pay 的 `/api/invicta/**` 外部接口，沿用 `X-PAY-KEY`、`X-PAY-SIGN`、`X-PAY-TIMESTAMP` 签名规则。
-- UTC Pay 只允许配置在 `INVICTA_API_KEY` 中的专用 Key 调用上述账号接口；该 Key 还应配置 Invicta 服务器 IP 白名单。
+- UTC Pay 只允许签名验证后解析出的 `merId=1000` 调用上述账号接口；生产环境建议同时配置 Invicta 服务器 IP 白名单。
 - 页面提示支持中英文，通过 `Accept-Language` 请求头或 `lang` 查询参数选择；未指定时默认英文。
 - 邮件账号使用与 UTC Pay 一致的 `mail.configs` 配置结构，SMTP 密码只通过环境变量或部署密钥注入。
 
@@ -93,17 +93,17 @@ mail:
 
 不要把 UTC Pay 现有邮箱密码复制到 Git；部署时为 Invicta 设置相同的邮箱环境变量即可。
 
-调用 UTC Pay 时需要为 Invicta 单独分配一组 API Key/Secret：
+调用 UTC Pay 时使用数据库中 `merId=1000` 对应的通用 API Key/Secret：
 
 ```bash
-LEGACY_API_KEY=<invicta专用API Key>
-LEGACY_API_SECRET=<对应Secret Key>
+LEGACY_API_KEY=<merId=1000对应的API Key>
+LEGACY_API_SECRET=<merId=1000对应的Secret Key>
 ```
 
-UTC Pay 服务设置相同的 `INVICTA_API_KEY`，用于限制只有这组凭证可以调用
-`/api/invicta/account/register` 和 `/api/invicta/organization/profile`。Secret 只配置在 Invicta，不能提交到代码库。
+UTC Pay 不需要额外配置 `INVICTA_API_KEY`。请求通过原有签名校验后，账号接口会检查凭证对应的
+`merId` 必须为 `1000`。Secret 只配置在 Invicta，不能提交到代码库。
 
-部署时先执行 UTC Pay 仓库中的 `db/migration/V20261012__add_invicta_auth_fields.sql`，再发布 UTC Pay 和 Invicta。
+发布前需要由 DBA 为 `sys_organ` 增加唯一登录邮箱、密码哈希和资料完成状态字段；仓库中不保存数据库变更 SQL。
 
 ## 只读数据库账号
 
