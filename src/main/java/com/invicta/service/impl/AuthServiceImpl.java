@@ -25,6 +25,8 @@ import com.invicta.service.TokenService;
 import com.invicta.util.EmailAddressUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -36,6 +38,7 @@ import java.util.Set;
 
 @Service
 public class AuthServiceImpl implements AuthService {
+    private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
     private final SysOrganMapper organizationMapper;
     private final EmailCodeStore codes;
     private final EmailCodeSender sender;
@@ -63,6 +66,7 @@ public class AuthServiceImpl implements AuthService {
         validatePurpose(normalizedEmail, purpose);
 
         issueCode(normalizedEmail, normalizedEmail, purpose);
+        log.info("邮箱验证码已发送 email={} purpose={}", EmailAddressUtils.mask(normalizedEmail), purpose);
     }
 
     @Override
@@ -70,6 +74,8 @@ public class AuthServiceImpl implements AuthService {
         SysOrganEntity organization = findExistingAccount(orgName);
         String email = existingEmail(organization);
         issueCode(existingIdentity(organization, email), email, EmailCodePurpose.LOGIN);
+        log.info("已有商户验证码已发送 orgId={} email={}",
+                organization.getOrgId(), EmailAddressUtils.mask(email));
     }
 
     private void issueCode(String identity, String recipient, EmailCodePurpose purpose) {
@@ -97,6 +103,7 @@ public class AuthServiceImpl implements AuthService {
         if (!codes.consume(normalizedEmail, EmailCodePurpose.LOGIN, code)) {
             throw new VerificationCodeInvalidException();
         }
+        log.info("邮箱验证码登录成功 orgId={}", account.orgId());
         return tokens.issue(account);
     }
 
@@ -107,6 +114,7 @@ public class AuthServiceImpl implements AuthService {
         if (!codes.consume(existingIdentity(organization, email), EmailCodePurpose.LOGIN, code)) {
             throw new VerificationCodeInvalidException();
         }
+        log.info("已有商户验证码登录成功 orgId={}", organization.getOrgId());
         return tokens.issue(toExistingAccount(organization, email));
     }
 
@@ -119,6 +127,7 @@ public class AuthServiceImpl implements AuthService {
                 || !passwordEncoder.matches(password, organization.getPasswordHash())) {
             throw new InvalidCredentialsException();
         }
+        log.info("密码登录成功 orgId={}", organization.getOrgId());
         return tokens.issue(toAccount(organization));
     }
 
@@ -141,6 +150,8 @@ public class AuthServiceImpl implements AuthService {
         body.put("password", request.password());
         legacy.postSigned("/api/invicta/account/register", body, Object.class);
         SysOrganEntity organization = findActiveByEmail(email).orElseThrow(AccountUnavailableException::new);
+        log.info("Invicta账号注册成功 orgId={} email={}",
+                organization.getOrgId(), EmailAddressUtils.mask(email));
         return tokens.issue(toAccount(organization));
     }
 
@@ -153,6 +164,7 @@ public class AuthServiceImpl implements AuthService {
         legacy.postSigned("/api/invicta/organization/profile", body, Object.class);
 
         SysOrganEntity organization = findActiveById(orgId).orElseThrow(AccountUnavailableException::new);
+        log.info("商户资料完善成功 orgId={} orgType={}", orgId, request.orgType());
         return tokens.issue(toAccount(organization));
     }
 
@@ -264,7 +276,7 @@ public class AuthServiceImpl implements AuthService {
     private void validatePassword(String password) {
         int bytes = password.getBytes(StandardCharsets.UTF_8).length;
         if (bytes < 8 || bytes > 72) {
-            throw new IllegalArgumentException("Password must contain between 8 and 72 UTF-8 bytes");
+            throw new IllegalArgumentException("密码长度必须为 8 至 72 个 UTF-8 字节");
         }
     }
 }

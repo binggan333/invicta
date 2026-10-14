@@ -116,7 +116,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <systemPropertyVariables>
-                        <!-- Local development may run ahead of Byte Buddy's declared JDK range. -->
+                        <!-- 本地 JDK 版本可能高于 Byte Buddy 声明支持的范围。 -->
                         <net.bytebuddy.experimental>true</net.bytebuddy.experimental>
                     </systemPropertyVariables>
                 </configuration>

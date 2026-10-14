@@ -28,7 +28,7 @@ public class LocaleConfig {
 
             @Override
             public void setLocale(HttpServletRequest request, HttpServletResponse response, Locale locale) {
-                // Invicta is stateless; callers select the language on every request.
+                // Invicta 不保存会话，调用方需要在每个请求中指定语言。
             }
         };
     }

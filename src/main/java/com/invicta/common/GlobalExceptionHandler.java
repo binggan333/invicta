@@ -1,6 +1,9 @@
 package com.invicta.common;
 
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
@@ -21,6 +24,7 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
     private final MessageSource messages;
 
     public GlobalExceptionHandler(MessageSource messages) {
@@ -107,12 +111,23 @@ public class GlobalExceptionHandler {
         return error(exception.getStatusCode(), "request_failed", localized, Map.of());
     }
 
+    @ExceptionHandler(Exception.class)
+    ResponseEntity<ApiError> unexpected(Exception exception) {
+        log.error("未处理的服务异常 type={}", exception.getClass().getSimpleName(), exception);
+        return error(HttpStatus.INTERNAL_SERVER_ERROR, "internal_server_error",
+                message("error.internal-server"), Map.of());
+    }
+
     private String message(String key) {
         return messages.getMessage(key, null, key, LocaleContextHolder.getLocale());
     }
 
     private ResponseEntity<ApiError> error(HttpStatusCode status, String code, String message,
                                            Map<String, String> details) {
-        return ResponseEntity.status(status).body(new ApiError(code, message, Instant.now(), details));
+        if (status.is4xxClientError()) {
+            log.warn("请求被拒绝 status={} code={}", status.value(), code);
+        }
+        return ResponseEntity.status(status).body(
+                new ApiError(code, message, Instant.now(), MDC.get("requestId"), details));
     }
 }

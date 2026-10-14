@@ -3,6 +3,8 @@ package com.invicta.service.impl;
 import com.invicta.service.SummaryService;
 
 import com.invicta.model.SummaryModels;
+import com.invicta.model.LegacyApiResponse;
+import com.invicta.model.OperationRequests;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -20,13 +22,17 @@ import com.invicta.security.OrganizationAccessPolicy;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Service
 public class SummaryServiceImpl implements SummaryService {
+    private static final Logger log = LoggerFactory.getLogger(SummaryServiceImpl.class);
     private final OrderSummaryMapper summaryMapper;
     private final OrderSummaryDetailMapper detailMapper;
     private final OrganizationAccessPolicy access;
@@ -80,14 +86,28 @@ public class SummaryServiceImpl implements SummaryService {
         return summaryMapper.selectWalletBalances(orgId, walletId);
     }
 
-    public Object create(CurrentUser user, long orgId, Map<String, Object> body) {
+    public LegacyApiResponse create(CurrentUser user, long orgId, OperationRequests.SummaryCreate request) {
         access.requireRead(user, orgId);
-        return legacy.post("/summary/save", body, Object.class);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("orgId", orgId);
+        body.put("userWalletIds", request.userWalletIds());
+        body.put("chainId", request.chainId());
+        body.put("transferHash", request.transferHash());
+        body.put("summaryType", request.summaryType());
+        log.info("提交资金归集订单 orgId={} chainId={}", orgId, request.chainId());
+        return legacy.post("/summary/save", body, LegacyApiResponse.class);
     }
 
-    public Object checkStatus(CurrentUser user, long orgId, Map<String, Object> body) {
+    public LegacyApiResponse checkStatus(CurrentUser user, long orgId,
+                                         OperationRequests.SummaryStatusCheck request) {
         access.requireRead(user, orgId);
-        return legacy.post("/summary/updateStatus", body, Object.class);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("orgId", orgId);
+        body.put("chainId", request.chainId());
+        body.put("userWalletIds", request.userWalletIds());
+        log.info("检查资金归集状态 orgId={} chainId={} walletCount={}",
+                orgId, request.chainId(), request.userWalletIds().size());
+        return legacy.post("/summary/updateStatus", body, LegacyApiResponse.class);
     }
 
     private LambdaQueryWrapper<OrderSummaryEntity> query(long orgId, Integer chainId, Integer status,

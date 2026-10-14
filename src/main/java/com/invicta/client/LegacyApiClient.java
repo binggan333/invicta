@@ -3,6 +3,8 @@ package com.invicta.client;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.invicta.config.InvictaProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -19,6 +21,7 @@ import java.util.Base64;
  */
 @Component
 public class LegacyApiClient {
+    private static final Logger log = LoggerFactory.getLogger(LegacyApiClient.class);
     private final RestClient client;
     private final ObjectMapper objectMapper;
     private final InvictaProperties.LegacyApi properties;
@@ -36,6 +39,7 @@ public class LegacyApiClient {
 
     public <T, R> R post(String relativePath, T body, Class<R> responseType) {
         requireRelative(relativePath);
+        log.info("调用UTC Pay method=POST path={} signed=false", relativePath);
         return client.post().uri(relativePath).contentType(MediaType.APPLICATION_JSON)
                 .body(body).retrieve().body(responseType);
     }
@@ -46,6 +50,7 @@ public class LegacyApiClient {
         String timestamp = Long.toString(Instant.now().getEpochSecond());
         String json = json(body);
         String signature = sign(timestamp + "POST" + relativePath + json);
+        log.info("调用UTC Pay method=POST path={} signed=true", relativePath);
         return client.post().uri(relativePath)
                 .header("X-PAY-KEY", properties.apiKey())
                 .header("X-PAY-SIGN", signature)
@@ -56,13 +61,14 @@ public class LegacyApiClient {
 
     public <T, R> R put(String relativePath, T body, Class<R> responseType) {
         requireRelative(relativePath);
+        log.info("调用UTC Pay method=PUT path={} signed=false", relativePath);
         return client.put().uri(relativePath).contentType(MediaType.APPLICATION_JSON)
                 .body(body).retrieve().body(responseType);
     }
 
     private void requireRelative(String path) {
         if (path == null || !path.startsWith("/") || path.startsWith("//") || path.contains("://")) {
-            throw new IllegalArgumentException("Legacy API path must be relative");
+            throw new IllegalArgumentException("UTC Pay API 路径必须为相对路径");
         }
     }
 

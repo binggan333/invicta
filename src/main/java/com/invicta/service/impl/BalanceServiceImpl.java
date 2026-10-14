@@ -3,6 +3,8 @@ package com.invicta.service.impl;
 import com.invicta.service.BalanceService;
 
 import com.invicta.model.BalanceModels;
+import com.invicta.model.LegacyApiResponse;
+import com.invicta.model.OperationRequests;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -21,15 +23,19 @@ import com.invicta.security.OrganizationAccessPolicy;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Service
 public class BalanceServiceImpl implements BalanceService {
+    private static final Logger log = LoggerFactory.getLogger(BalanceServiceImpl.class);
     private final OrderBalanceMapper balanceMapper;
     private final OrderBalanceDetailMapper detailMapper;
     private final SysOrgChainWalletCurrencyBalanceMapper walletBalanceMapper;
@@ -90,9 +96,15 @@ public class BalanceServiceImpl implements BalanceService {
         return new BalanceModels.Percentage(selected, total, percentage);
     }
 
-    public Object create(CurrentUser user, long orgId, Map<String, Object> body) {
+    public LegacyApiResponse create(CurrentUser user, long orgId, OperationRequests.BalanceCreate request) {
         access.requireRead(user, orgId);
-        return legacy.post("/balance/save", body, Object.class);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("orgId", orgId);
+        body.put("chainId", request.chainId());
+        body.put("balanceHash", request.balanceHash());
+        body.put("balanceType", request.balanceType());
+        log.info("提交资金平衡订单 orgId={} chainId={}", orgId, request.chainId());
+        return legacy.post("/balance/save", body, LegacyApiResponse.class);
     }
 
     private LambdaQueryWrapper<OrderBalanceEntity> query(long orgId, Integer chainId, Integer status,

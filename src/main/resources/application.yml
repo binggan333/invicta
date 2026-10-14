@@ -24,8 +24,17 @@ management:
         enabled: true
 
 springdoc:
+  api-docs:
+    path: /v3/api-docs
   swagger-ui:
     path: /docs
+    operations-sorter: alpha
+    tags-sorter: alpha
+    display-request-duration: true
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [requestId=%X{requestId:-system}] %logger{36} - %msg%n"
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
