@@ -103,6 +103,7 @@ public class AuthServiceImpl implements AuthService {
         if (!codes.consume(normalizedEmail, EmailCodePurpose.LOGIN, code)) {
             throw new VerificationCodeInvalidException();
         }
+        ensurePrepaidAccount(account.orgId());
         log.info("邮箱验证码登录成功 orgId={}", account.orgId());
         return tokens.issue(account);
     }
@@ -114,6 +115,7 @@ public class AuthServiceImpl implements AuthService {
         if (!codes.consume(existingIdentity(organization, email), EmailCodePurpose.LOGIN, code)) {
             throw new VerificationCodeInvalidException();
         }
+        ensurePrepaidAccount(organization.getOrgId());
         log.info("已有商户验证码登录成功 orgId={}", organization.getOrgId());
         return tokens.issue(toExistingAccount(organization, email));
     }
@@ -127,6 +129,7 @@ public class AuthServiceImpl implements AuthService {
                 || !passwordEncoder.matches(password, organization.getPasswordHash())) {
             throw new InvalidCredentialsException();
         }
+        ensurePrepaidAccount(organization.getOrgId());
         log.info("密码登录成功 orgId={}", organization.getOrgId());
         return tokens.issue(toAccount(organization));
     }
@@ -243,6 +246,15 @@ public class AuthServiceImpl implements AuthService {
 
     private String existingIdentity(SysOrganEntity organization, String email) {
         return "existing:" + organization.getOrgId() + ':' + email;
+    }
+
+    /**
+     * 老商户可能还没有预付费账户。登录成功后通过 UTC Pay 幂等补齐，Invicta 不直接写共享数据库。
+     */
+    private void ensurePrepaidAccount(long orgId) {
+        legacy.postSigned("/api/invicta/prepaid/account/initialize",
+                Map.of("orgId", orgId), Object.class);
+        log.info("预付费账户检查完成 orgId={}", orgId);
     }
 
     private OrganizationAccount toAccount(SysOrganEntity organization) {

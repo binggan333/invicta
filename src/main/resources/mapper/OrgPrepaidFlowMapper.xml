@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.invicta.mapper.OrgPrepaidFlowMapper">
+    <select id="selectFlowPage" resultType="com.invicta.model.PrepaidModels$Flow">
+        SELECT f.id,
+               f.org_id,
+               f.chain_id,
+               c.chain_name,
+               f.type,
+               f.action,
+               f.before_balance,
+               f.after_balance,
+               f.change_amount,
+               f.tx_hash,
+               f.biz_no,
+               f.create_time,
+               f.update_time,
+               CASE WHEN f.type = 1 THEN (
+                   SELECT COUNT(1)
+                   FROM order_summary_detail d
+                   WHERE d.summary_id = f.biz_no
+               ) ELSE 0 END AS user_wallet_count
+        FROM org_prepaid_flow f
+        LEFT JOIN sys_chain c ON c.chain_id = f.chain_id
+        WHERE f.org_id = #{orgId}
+        <if test="chainId != null">
+            AND f.chain_id = #{chainId}
+        </if>
+        <if test="from != null">
+            AND f.create_time <![CDATA[ >= ]]> #{from}
+        </if>
+        <if test="to != null">
+            AND f.create_time <![CDATA[ < ]]> #{to}
+        </if>
+        ORDER BY f.id DESC
+    </select>
+</mapper>
