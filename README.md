@@ -14,7 +14,7 @@ Invicta 是基于现有 UTC Pay 数据库的独立统计与看板服务。它是
 - 已有账号验证码的 Redis 身份键包含 `orgId`；即使多个商户共用一个历史邮箱，验证码也不会在商户之间复用。
 - 验证码和发送冷却均存储在 Redis：有效期 60 秒、同邮箱同用途 60 秒内不可重复发送，验证成功后原子删除且不可复用。
 - 登录验证码与注册验证码按用途隔离。注册通过验证码后转调旧平台注册 API，并返回仅可完善资料的 JWT。
-- 新账号完成商户名和商户类型（3 专业版、4 轻量版、5 标准版）前，只能访问 `/auth/me` 和 `/auth/me/profile`。
+- 新账号完成商户名和商户类型（3 专业版、4 轻量版、5 标准版）前，只能访问 `/auth/me` 和 `/auth/profile`。
 - 注册和资料完善调用 UTC Pay 的 `/api/invicta/**` 外部接口，沿用 `X-PAY-KEY`、`X-PAY-SIGN`、`X-PAY-TIMESTAMP` 签名规则。
 - UTC Pay 只允许签名验证后解析出的 `merId=1000` 调用上述账号接口；生产环境建议同时配置 Invicta 服务器 IP 白名单。
 - 页面提示支持中英文，通过 `Accept-Language` 请求头或 `lang` 查询参数选择；未指定时默认英文。
@@ -24,27 +24,27 @@ Invicta 是基于现有 UTC Pay 数据库的独立统计与看板服务。它是
 
 | Method | Path | 说明 |
 |---|---|---|
-| POST | `/api/v1/auth/verification-codes` | 请求登录或注册验证码 |
-| POST | `/api/v1/auth/sessions/email-code` | 使用邮箱验证码登录 |
-| POST | `/api/v1/auth/existing-accounts/verification-codes` | 已有账户按商户名请求验证码 |
-| POST | `/api/v1/auth/sessions/existing-account` | 已有账户按商户名验证并登录 |
-| POST | `/api/v1/auth/sessions/password` | 使用邮箱和密码登录 |
-| POST | `/api/v1/auth/registrations` | 验证邮箱、设置密码并创建待完善账号 |
-| PUT | `/api/v1/auth/me/profile` | 填写商户名和商户类型，返回完整权限 JWT |
+| POST | `/api/v1/auth/email/code` | 请求登录或注册验证码 |
+| POST | `/api/v1/auth/email/login` | 使用邮箱验证码登录 |
+| POST | `/api/v1/auth/existing/code` | 已有账户按商户名请求验证码 |
+| POST | `/api/v1/auth/existing/login` | 已有账户按商户名验证并登录 |
+| POST | `/api/v1/auth/password/login` | 使用邮箱和密码登录 |
+| POST | `/api/v1/auth/register` | 验证邮箱、设置密码并创建待完善账号 |
+| PUT | `/api/v1/auth/profile` | 填写商户名和商户类型，返回完整权限 JWT |
 | GET | `/api/v1/auth/me` | 当前账号 |
-| GET | `/api/v1/organizations` | 机构分页列表 |
-| GET | `/api/v1/chains` | 链列表 |
-| GET | `/api/v1/currencies` | 币种列表 |
-| GET | `/api/v1/payments` | 收单分页列表、详情、统计 |
-| GET | `/api/v1/recharges` | 充值分页列表、详情、统计 |
-| GET/POST | `/api/v1/summaries` | 归集分页列表、详情、统计、钱包币种余额及写操作 |
-| GET/POST | `/api/v1/balances` | 平衡分页列表、详情、统计、余额分布及写操作 |
-| GET/POST | `/api/v1/withdrawals` | 提现列表、详情、统计；申请/审批/确认转调老平台 |
-| GET | `/api/v1/dashboard/overview` | 看板概览 |
+| GET | `/api/v1/organization` | 商户分页列表 |
+| GET | `/api/v1/chain` | 链列表 |
+| GET | `/api/v1/currency` | 币种列表 |
+| GET | `/api/v1/payment` | 收单分页列表、详情、统计 |
+| GET | `/api/v1/recharge` | 充值分页列表、详情、统计 |
+| GET/POST | `/api/v1/summary` | 归集分页列表、详情、统计、钱包币种余额及写操作 |
+| GET/POST | `/api/v1/balance` | 平衡分页列表、详情、统计、余额占比及写操作 |
+| GET/POST | `/api/v1/withdraw` | 提现列表、详情、统计；申请、审批和确认转调旧平台 |
+| GET | `/api/v1/dashboard/summary` | 看板汇总 |
 
 Swagger UI: `http://localhost:8081/docs`
 
-接口路径遵循以下约定：使用小写复数名词表示资源，使用子资源表达状态检查、审批等业务关系，避免在路径中使用 `get`、`save`、`checkStatus` 等动词。查询参数统一使用 `camelCase`。
+接口路径遵循以下约定：使用小写、直观且与业务一致的功能名称，例如 `payment`、`recharge`、`summary`、`balance` 和 `withdraw`；必要的操作使用 `login`、`approve`、`confirm`、`check-status` 等明确词汇。查询参数统一使用 `camelCase`。
 
 每个响应都会返回 `X-Request-Id` 响应头。服务日志包含相同的请求 ID、HTTP 方法、路径、状态码和耗时；日志禁止记录密码、验证码、JWT、API Secret 和完整请求体。错误响应也包含 `requestId`，可直接用于日志检索。
 
@@ -116,40 +116,40 @@ UTC Pay 不需要额外配置 `INVICTA_API_KEY`。请求通过原有签名校验
 ## 示例
 
 ```bash
-curl -X POST http://localhost:8081/api/v1/auth/verification-codes \
+curl -X POST http://localhost:8081/api/v1/auth/email/code \
   -H 'Accept-Language: zh-CN' \
   -H 'Content-Type: application/json' \
   -d '{"email":"operator@example.com","purpose":"LOGIN"}'
 
-curl -X POST http://localhost:8081/api/v1/auth/sessions/email-code \
+curl -X POST http://localhost:8081/api/v1/auth/email/login \
   -H 'Content-Type: application/json' \
   -d '{"email":"operator@example.com","code":"123456"}'
 
 # 历史商户的新 email 字段保持为空，通过商户名进入已有账户登录。
-curl -X POST http://localhost:8081/api/v1/auth/existing-accounts/verification-codes \
+curl -X POST http://localhost:8081/api/v1/auth/existing/code \
   -H 'Content-Type: application/json' \
   -d '{"orgName":"Existing Org"}'
 
-curl -X POST http://localhost:8081/api/v1/auth/sessions/existing-account \
+curl -X POST http://localhost:8081/api/v1/auth/existing/login \
   -H 'Content-Type: application/json' \
   -d '{"orgName":"Existing Org","code":"123456"}'
 
 # 新用户先请求 REGISTRATION 验证码，再设置密码创建账号。
-curl -X POST http://localhost:8081/api/v1/auth/registrations \
+curl -X POST http://localhost:8081/api/v1/auth/register \
   -H 'Content-Type: application/json' \
   -d '{"email":"new@example.com","code":"123456","password":"StrongPass123"}'
 
 # 使用注册响应中的临时 JWT 完善商户资料。
-curl -X PUT http://localhost:8081/api/v1/auth/me/profile \
+curl -X PUT http://localhost:8081/api/v1/auth/profile \
   -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
   -d '{"orgName":"New Org","orgType":3}'
 
-curl -X POST http://localhost:8081/api/v1/auth/sessions/password \
+curl -X POST http://localhost:8081/api/v1/auth/password/login \
   -H 'Content-Type: application/json' \
   -d '{"email":"new@example.com","password":"StrongPass123"}'
 
-curl 'http://localhost:8081/api/v1/payments?orgId=100&page=0&size=20' \
+curl 'http://localhost:8081/api/v1/payment?orgId=100&page=0&size=20' \
   -H 'Authorization: Bearer <token>'
 ```
 

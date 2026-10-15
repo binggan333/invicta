@@ -25,7 +25,7 @@ import java.time.LocalDateTime;
 @Tag(name = "提现", description = "提现订单查询、统计、申请和审批")
 @Validated
 @RestController
-@RequestMapping("/api/v1/withdrawals")
+@RequestMapping("/api/v1/withdraw")
 public class WithdrawController {
     private final WithdrawService service;
 
@@ -78,7 +78,7 @@ public class WithdrawController {
     }
 
     @Operation(summary = "为提现订单创建审批提案")
-    @PostMapping("/{id}/approval-proposals")
+    @PostMapping("/{id}/approve")
     public LegacyApiResponse approve(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
             @Parameter(description = "提现订单 ID", required = true) @PathVariable long id,
@@ -87,7 +87,7 @@ public class WithdrawController {
     }
 
     @Operation(summary = "确认提现审批提案")
-    @PostMapping("/approval-proposals/{id}/confirmations")
+    @PostMapping("/proposal/{id}/confirm")
     public LegacyApiResponse confirm(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
             @Parameter(description = "审批提案 ID", required = true) @PathVariable long id,

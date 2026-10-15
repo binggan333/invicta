@@ -26,7 +26,7 @@ import java.util.List;
 @Tag(name = "资金归集", description = "资金归集订单查询、统计、余额和状态检查")
 @Validated
 @RestController
-@RequestMapping("/api/v1/summaries")
+@RequestMapping("/api/v1/summary")
 public class SummaryController {
     private final SummaryService service;
 
@@ -85,7 +85,7 @@ public class SummaryController {
     }
 
     @Operation(summary = "检查并更新资金归集状态", description = "通过 UTC Pay 查询链上余额并更新归集状态。")
-    @PostMapping("/status-checks")
+    @PostMapping("/check-status")
     public LegacyApiResponse checkStatus(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
             @Valid @RequestBody OperationRequests.SummaryStatusCheck request) {

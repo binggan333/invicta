@@ -27,12 +27,12 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/verification-codes",
-                                "/api/v1/auth/existing-accounts/verification-codes",
-                                "/api/v1/auth/sessions/**",
-                                "/api/v1/auth/registrations",
+                        .requestMatchers("/api/v1/auth/email/**",
+                                "/api/v1/auth/existing/**",
+                                "/api/v1/auth/password/login",
+                                "/api/v1/auth/register",
                                 "/actuator/health/**", "/v3/api-docs/**", "/docs/**", "/docs").permitAll()
-                        .requestMatchers("/api/v1/auth/me", "/api/v1/auth/me/profile").authenticated()
+                        .requestMatchers("/api/v1/auth/me", "/api/v1/auth/profile").authenticated()
                         .anyRequest().access((authentication, context) -> {
                             if (authentication.get() instanceof JwtAuthenticationToken token) {
                                 return new AuthorizationDecision(Boolean.TRUE.equals(

@@ -25,7 +25,7 @@ import java.time.LocalDateTime;
 @Tag(name = "资金平衡", description = "资金平衡订单查询、统计与提交")
 @Validated
 @RestController
-@RequestMapping("/api/v1/balances")
+@RequestMapping("/api/v1/balance")
 public class BalanceController {
     private final BalanceService service;
 
@@ -68,7 +68,7 @@ public class BalanceController {
     }
 
     @Operation(summary = "查询钱包类型余额分布")
-    @GetMapping("/distribution")
+    @GetMapping("/percentage")
     public BalanceModels.Percentage percentage(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
             @Parameter(description = "区块链网络 ID", required = true) @RequestParam int chainId,

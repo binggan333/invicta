@@ -15,7 +15,7 @@ import java.util.List;
 
 @Tag(name = "基础数据-币种", description = "链上币种基础数据")
 @RestController
-@RequestMapping("/api/v1/currencies")
+@RequestMapping("/api/v1/currency")
 public class CurrencyController {
     private final CurrencyService service;
     public CurrencyController(CurrencyService service) { this.service = service; }

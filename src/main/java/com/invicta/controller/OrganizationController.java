@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "商户", description = "当前账号有权查看的商户资料")
 @Validated
 @RestController
-@RequestMapping("/api/v1/organizations")
+@RequestMapping("/api/v1/organization")
 public class OrganizationController {
     private final OrganizationService service;
 

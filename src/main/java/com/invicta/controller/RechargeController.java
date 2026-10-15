@@ -22,7 +22,7 @@ import java.time.LocalDateTime;
 @Tag(name = "充值", description = "充值订单查询与统计")
 @Validated
 @RestController
-@RequestMapping("/api/v1/recharges")
+@RequestMapping("/api/v1/recharge")
 public class RechargeController {
     private final RechargeService service;
 

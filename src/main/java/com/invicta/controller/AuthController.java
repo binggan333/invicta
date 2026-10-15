@@ -37,7 +37,7 @@ public class AuthController {
 
     @Operation(summary = "发送邮箱验证码", description = "验证码和重复发送冷却时间均为 60 秒；验证码成功使用后立即失效。")
     @SecurityRequirements
-    @PostMapping("/verification-codes")
+    @PostMapping("/email/code")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public AuthModels.MessageResponse requestCode(@Valid @RequestBody RequestCode request) {
         authService.requestCode(request.email(), request.purpose());
@@ -47,14 +47,14 @@ public class AuthController {
 
     @Operation(summary = "使用邮箱验证码登录")
     @SecurityRequirements
-    @PostMapping("/sessions/email-code")
+    @PostMapping("/email/login")
     public TokenService.TokenResponse verify(@Valid @RequestBody VerifyCode request) {
         return authService.verify(request.email(), request.code());
     }
 
     @Operation(summary = "为已有商户发送验证码", description = "按商户名称定位尚未设置新登录邮箱的历史商户，并向历史联系邮箱发送验证码。")
     @SecurityRequirements
-    @PostMapping("/existing-accounts/verification-codes")
+    @PostMapping("/existing/code")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public AuthModels.MessageResponse requestExistingCode(@Valid @RequestBody ExistingRequestCode request) {
         authService.requestExistingAccountCode(request.orgName());
@@ -64,28 +64,28 @@ public class AuthController {
 
     @Operation(summary = "已有商户验证码登录")
     @SecurityRequirements
-    @PostMapping("/sessions/existing-account")
+    @PostMapping("/existing/login")
     public TokenService.TokenResponse verifyExisting(@Valid @RequestBody ExistingVerifyCode request) {
         return authService.verifyExistingAccount(request.orgName(), request.code());
     }
 
     @Operation(summary = "使用邮箱和密码登录")
     @SecurityRequirements
-    @PostMapping("/sessions/password")
+    @PostMapping("/password/login")
     public TokenService.TokenResponse passwordLogin(@Valid @RequestBody PasswordLogin request) {
         return authService.loginWithPassword(request.email(), request.password());
     }
 
     @Operation(summary = "注册新账号", description = "校验注册验证码并通过 UTC Pay 创建待完善商户账号。")
     @SecurityRequirements
-    @PostMapping("/registrations")
+    @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     public TokenService.TokenResponse register(@Valid @RequestBody RegistrationRequest request) {
         return authService.register(request);
     }
 
     @Operation(summary = "完善当前商户资料")
-    @PutMapping("/me/profile")
+    @PutMapping("/profile")
     public TokenService.TokenResponse completeProfile(@AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody OrganizationProfileRequest request) {
         return authService.completeProfile(Long.parseLong(jwt.getSubject()), request);

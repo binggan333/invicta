@@ -22,7 +22,7 @@ import java.time.LocalDateTime;
 @Tag(name = "收单", description = "收单订单查询与统计")
 @Validated
 @RestController
-@RequestMapping("/api/v1/payments")
+@RequestMapping("/api/v1/payment")
 public class PaymentController {
     private final PaymentService service;
 

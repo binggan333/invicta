@@ -13,7 +13,7 @@ import java.util.List;
 
 @Tag(name = "基础数据-网络", description = "区块链网络基础数据")
 @RestController
-@RequestMapping("/api/v1/chains")
+@RequestMapping("/api/v1/chain")
 public class ChainController {
     private final ChainService service;
     public ChainController(ChainService service) { this.service = service; }

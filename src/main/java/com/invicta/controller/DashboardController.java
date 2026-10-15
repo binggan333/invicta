@@ -28,7 +28,7 @@ public class DashboardController {
     }
 
     @Operation(summary = "查询经营看板概览")
-    @GetMapping("/overview")
+    @GetMapping("/summary")
     public DashboardModels.Summary summary(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
             @Parameter(description = "区块链网络 ID") @RequestParam(required = false) Integer chainId,
