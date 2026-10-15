@@ -16,7 +16,7 @@ Invicta 是基于现有 UTC Pay 数据库的独立统计与看板服务。它是
 - 登录验证码与注册验证码按用途隔离。注册通过验证码后转调旧平台注册 API，并返回仅可完善资料的 JWT。
 - 新账号完成商户名和商户类型（3 专业版、4 轻量版、5 标准版）前，只能访问 `/auth/me` 和 `/auth/profile`。
 - 注册和资料完善调用 UTC Pay 的 `/api/invicta/**` 外部接口，沿用 `X-PAY-KEY`、`X-PAY-SIGN`、`X-PAY-TIMESTAMP` 签名规则。
-- 新用户注册成功时由 UTC Pay 自动生成各链预付费充值地址和预付费账户；老用户首次成功登录时也会幂等补齐。Invicta 不直接写这两张表。
+- 新用户注册成功后，Invicta 自动调用 UTC Pay 的预付费充值账户创建接口；UTC Pay 仍按原有方式生成各链充值地址并初始化预付费账户。登录流程不修改 UTC Pay 的原有逻辑。
 - 用户向预付费地址充值后，仍由 UTC Pay 原有链上监听和入账流程更新账户余额及流水；Invicta 负责查询、展示和导出。
 - UTC Pay 只允许签名验证后解析出的 `merId=1000` 调用上述账号接口；生产环境建议同时配置 Invicta 服务器 IP 白名单。
 - 页面提示支持中英文，通过 `Accept-Language` 请求头或 `lang` 查询参数选择；未指定时默认英文。
@@ -43,7 +43,7 @@ Invicta 是基于现有 UTC Pay 数据库的独立统计与看板服务。它是
 | GET/POST | `/api/v1/balance` | 平衡分页列表、详情、统计、余额占比及写操作 |
 | GET/POST | `/api/v1/withdraw` | 提现列表、详情、统计；申请、审批和确认转调旧平台 |
 | GET | `/api/v1/dashboard/summary` | 看板汇总 |
-| GET/POST | `/api/v1/prepaid` | 预付费账户、充值地址、地址更新、流水列表和 XLSX 导出 |
+| GET/POST | `/api/v1/prepaid` | 预付费账户、充值地址、账户创建、地址更新、流水列表和 XLSX 导出 |
 | GET/PUT | `/api/v1/strategy` | 查询及配置归集、提现、平衡策略 |
 
 Swagger UI: `http://localhost:8081/docs`

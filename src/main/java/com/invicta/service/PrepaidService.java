@@ -13,6 +13,8 @@ public interface PrepaidService {
 
     List<PrepaidModels.RechargeWallet> rechargeWallets(CurrentUser user, long orgId);
 
+    List<PrepaidModels.RechargeWallet> createRechargeWallets(CurrentUser user, long orgId);
+
     List<PrepaidModels.RechargeWallet> refreshRechargeWallets(CurrentUser user, long orgId);
 
     PageResponse<PrepaidModels.Flow> flows(CurrentUser user, long orgId, Integer chainId,

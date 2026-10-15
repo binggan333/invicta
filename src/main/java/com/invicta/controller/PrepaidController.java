@@ -64,6 +64,13 @@ public class PrepaidController {
         return service.rechargeWallets(CurrentUser.from(jwt), orgId);
     }
 
+    @Operation(summary = "创建预付费充值账户", description = "通过 UTC Pay 原有逻辑创建各链充值地址和预付费账户；重复调用不会重复创建。")
+    @PostMapping("/recharge-wallet")
+    public List<PrepaidModels.RechargeWallet> createRechargeWallets(@AuthenticationPrincipal Jwt jwt,
+            @Parameter(description = "商户 ID", required = true) @RequestParam long orgId) {
+        return service.createRechargeWallets(CurrentUser.from(jwt), orgId);
+    }
+
     @Operation(summary = "更换预付费充值地址", description = "废弃当前地址并通过 UTC Pay 重新生成各链充值地址。")
     @PostMapping("/recharge-wallet/refresh")
     public List<PrepaidModels.RechargeWallet> refreshRechargeWallets(@AuthenticationPrincipal Jwt jwt,
