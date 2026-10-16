@@ -68,6 +68,14 @@ Swagger UI: `http://localhost:8081/docs`
 
 要求 Java 17、Maven 3.9+ 和 MySQL 8：
 
+从 GitHub 拉取代码后，可使用加密的测试配置生成本地 `.env`（配置密码单独保存，不提交到仓库）：
+
+```bash
+java tools/LocalConfigCipher.java decrypt
+```
+
+生成的 `.env` 已加入 `.gitignore`。不要把解密后的文件、配置密码或真实密钥提交到 Git。
+
 ```bash
 cp .env.example .env
 set -a && source .env && set +a
