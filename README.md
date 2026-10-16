@@ -70,8 +70,18 @@ Swagger UI: `http://localhost:8081/docs`
 
 从 GitHub 拉取代码后，可使用加密的测试配置生成本地 `.env`（配置密码单独保存，不提交到仓库）：
 
+Windows PowerShell（兼容 JDK 8，不需要修改系统 `JAVA_HOME`）：
+
+```powershell
+javac -encoding UTF-8 tools\LocalConfigCipher.java
+java -cp tools LocalConfigCipher decrypt
+```
+
+macOS/Linux 使用相同的编译运行方式：
+
 ```bash
-java tools/LocalConfigCipher.java decrypt
+javac -encoding UTF-8 tools/LocalConfigCipher.java
+java -cp tools LocalConfigCipher decrypt
 ```
 
 生成的 `.env` 已加入 `.gitignore`。不要把解密后的文件、配置密码或真实密钥提交到 Git。

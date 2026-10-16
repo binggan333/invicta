@@ -1,6 +1,7 @@
 .idea/
 .vscode/
 target/
+*.class
 .m2/
 *.iml
 .env

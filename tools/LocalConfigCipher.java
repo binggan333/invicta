@@ -9,6 +9,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -25,8 +26,8 @@ public class LocalConfigCipher {
     private static final int IV_LENGTH = 12;
     private static final int KEY_BITS = 256;
     private static final int ITERATIONS = 210_000;
-    private static final Path ENV_FILE = Path.of(".env");
-    private static final Path ENCRYPTED_FILE = Path.of("config", "invicta-test.env.enc");
+    private static final Path ENV_FILE = Paths.get(".env");
+    private static final Path ENCRYPTED_FILE = Paths.get("config", "invicta-test.env.enc");
 
     public static void main(String[] args) throws Exception {
         String operation = args.length == 0 ? "decrypt" : args[0];
@@ -53,14 +54,15 @@ public class LocalConfigCipher {
         ByteBuffer payload = ByteBuffer.allocate(MAGIC.length + salt.length + iv.length + encrypted.length);
         payload.put(MAGIC).put(salt).put(iv).put(encrypted);
         Files.createDirectories(ENCRYPTED_FILE.getParent());
-        Files.writeString(ENCRYPTED_FILE,
-                Base64.getEncoder().encodeToString(payload.array()) + System.lineSeparator(),
-                StandardCharsets.US_ASCII);
+        Files.write(ENCRYPTED_FILE,
+                (Base64.getEncoder().encodeToString(payload.array()) + System.lineSeparator())
+                        .getBytes(StandardCharsets.US_ASCII));
         System.out.println("加密完成: " + ENCRYPTED_FILE);
     }
 
     private static void decrypt(char[] password) throws Exception {
-        byte[] payload = Base64.getDecoder().decode(Files.readString(ENCRYPTED_FILE).trim());
+        String encoded = new String(Files.readAllBytes(ENCRYPTED_FILE), StandardCharsets.US_ASCII).trim();
+        byte[] payload = Base64.getDecoder().decode(encoded);
         ByteBuffer buffer = ByteBuffer.wrap(payload);
         byte[] magic = new byte[MAGIC.length];
         buffer.get(magic);
