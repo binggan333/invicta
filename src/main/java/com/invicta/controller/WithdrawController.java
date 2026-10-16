@@ -34,7 +34,7 @@ public class WithdrawController {
     }
 
     @Operation(summary = "分页查询提现订单")
-    @GetMapping
+    @GetMapping("/list")
     public PageResponse<OrderModels.WithdrawView> list(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
             @Parameter(description = "区块链网络 ID") @RequestParam(required = false) Integer chainId,
@@ -70,7 +70,7 @@ public class WithdrawController {
     }
 
     @Operation(summary = "提交提现申请", description = "Invicta 校验权限后将写操作转发给 UTC Pay。")
-    @PostMapping
+    @PostMapping("/apply")
     public LegacyApiResponse create(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
             @Valid @RequestBody OperationRequests.WithdrawalCreate request) {

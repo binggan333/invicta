@@ -58,14 +58,14 @@ public class PrepaidController {
     }
 
     @Operation(summary = "查询预付费充值地址", description = "每条记录对应一个区块链网络。向地址充值后，由 UTC Pay 的链上监听服务自动入账。")
-    @GetMapping("/recharge-wallet")
+    @GetMapping("/recharge-wallet/list")
     public List<PrepaidModels.RechargeWallet> rechargeWallets(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户 ID", required = true) @RequestParam long orgId) {
         return service.rechargeWallets(CurrentUser.from(jwt), orgId);
     }
 
     @Operation(summary = "创建预付费充值账户", description = "通过 UTC Pay 原有逻辑创建各链充值地址和预付费账户；重复调用不会重复创建。")
-    @PostMapping("/recharge-wallet")
+    @PostMapping("/recharge-wallet/create")
     public List<PrepaidModels.RechargeWallet> createRechargeWallets(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户 ID", required = true) @RequestParam long orgId) {
         return service.createRechargeWallets(CurrentUser.from(jwt), orgId);
@@ -79,7 +79,7 @@ public class PrepaidController {
     }
 
     @Operation(summary = "分页查询预付费流水")
-    @GetMapping("/flow")
+    @GetMapping("/flow/list")
     public PageResponse<PrepaidModels.Flow> flows(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
             @Parameter(description = "区块链网络 ID") @RequestParam(required = false) Integer chainId,

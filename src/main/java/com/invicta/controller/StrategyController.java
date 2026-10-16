@@ -28,7 +28,7 @@ public class StrategyController {
     }
 
     @Operation(summary = "查询商户策略")
-    @GetMapping
+    @GetMapping("/info")
     public StrategyModels.View get(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
             @Parameter(description = "区块链网络 ID", required = true) @RequestParam int chainId) {

@@ -21,7 +21,7 @@ public class CurrencyController {
     public CurrencyController(CurrencyService service) { this.service = service; }
 
     @Operation(summary = "查询币种列表")
-    @GetMapping
+    @GetMapping("/list")
     public List<SystemModels.Currency> list(
             @Parameter(description = "按区块链网络 ID 筛选") @RequestParam(required = false) Integer chainId) {
         return service.list(chainId);

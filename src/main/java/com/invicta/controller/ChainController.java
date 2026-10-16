@@ -19,6 +19,6 @@ public class ChainController {
     public ChainController(ChainService service) { this.service = service; }
 
     @Operation(summary = "查询网络列表")
-    @GetMapping
+    @GetMapping("/list")
     public List<SystemModels.Chain> list() { return service.list(); }
 }

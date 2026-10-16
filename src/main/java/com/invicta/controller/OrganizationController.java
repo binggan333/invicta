@@ -29,7 +29,7 @@ public class OrganizationController {
     public OrganizationController(OrganizationService service) { this.service = service; }
 
     @Operation(summary = "分页查询商户")
-    @GetMapping
+    @GetMapping("/list")
     public PageResponse<SystemModels.Organization> list(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户名称、邮箱或手机号关键字") @RequestParam(required = false) String keyword,
             @Parameter(description = "商户类型编码") @RequestParam(required = false) Integer type,

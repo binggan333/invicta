@@ -35,7 +35,7 @@ public class SummaryController {
     }
 
     @Operation(summary = "分页查询资金归集订单")
-    @GetMapping
+    @GetMapping("/list")
     public PageResponse<SummaryModels.View> list(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
             @Parameter(description = "区块链网络 ID") @RequestParam(required = false) Integer chainId,
@@ -77,7 +77,7 @@ public class SummaryController {
     }
 
     @Operation(summary = "提交资金归集订单", description = "Invicta 校验权限后将写操作转发给 UTC Pay。")
-    @PostMapping
+    @PostMapping("/create")
     public LegacyApiResponse create(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
             @Valid @RequestBody OperationRequests.SummaryCreate request) {

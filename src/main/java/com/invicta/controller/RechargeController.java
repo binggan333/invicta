@@ -31,7 +31,7 @@ public class RechargeController {
     }
 
     @Operation(summary = "分页查询充值订单")
-    @GetMapping
+    @GetMapping("/list")
     public PageResponse<OrderModels.RechargeView> list(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
             @Parameter(description = "区块链网络 ID") @RequestParam(required = false) Integer chainId,

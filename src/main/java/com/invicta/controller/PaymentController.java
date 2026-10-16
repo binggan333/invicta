@@ -31,7 +31,7 @@ public class PaymentController {
     }
 
     @Operation(summary = "分页查询收单订单")
-    @GetMapping
+    @GetMapping("/list")
     public PageResponse<OrderModels.PaymentView> list(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
             @Parameter(description = "区块链网络 ID") @RequestParam(required = false) Integer chainId,

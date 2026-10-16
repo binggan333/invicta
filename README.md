@@ -34,21 +34,21 @@ Invicta 是基于现有 UTC Pay 数据库的独立统计与看板服务。它是
 | POST | `/api/v1/auth/register` | 验证邮箱、设置密码并创建待完善账号 |
 | PUT | `/api/v1/auth/profile` | 填写商户名和商户类型，返回完整权限 JWT |
 | GET | `/api/v1/auth/me` | 当前账号 |
-| GET | `/api/v1/organization` | 商户分页列表 |
-| GET | `/api/v1/chain` | 链列表 |
-| GET | `/api/v1/currency` | 币种列表 |
-| GET | `/api/v1/payment` | 收单分页列表、详情、统计 |
-| GET | `/api/v1/recharge` | 充值分页列表、详情、统计 |
-| GET/POST | `/api/v1/summary` | 归集分页列表、详情、统计、钱包币种余额及写操作 |
-| GET/POST | `/api/v1/balance` | 平衡分页列表、详情、统计、余额占比及写操作 |
-| GET/POST | `/api/v1/withdraw` | 提现列表、详情、统计；申请、审批和确认转调旧平台 |
+| GET | `/api/v1/organization/list` | 商户分页列表 |
+| GET | `/api/v1/chain/list` | 链列表 |
+| GET | `/api/v1/currency/list` | 币种列表 |
+| GET | `/api/v1/payment/list` | 收单分页列表；同模块提供详情和统计接口 |
+| GET | `/api/v1/recharge/list` | 充值分页列表；同模块提供详情和统计接口 |
+| GET/POST | `/api/v1/summary/*` | 归集列表、详情、统计、钱包币种余额及创建操作 |
+| GET/POST | `/api/v1/balance/*` | 平衡列表、详情、统计、余额占比及创建操作 |
+| GET/POST | `/api/v1/withdraw/*` | 提现列表、详情、统计、申请、审批和确认 |
 | GET | `/api/v1/dashboard/summary` | 看板汇总 |
-| GET/POST | `/api/v1/prepaid` | 预付费账户、充值地址、账户创建、地址更新、流水列表和 XLSX 导出 |
-| GET/PUT | `/api/v1/strategy` | 查询及配置归集、提现、平衡策略 |
+| GET/POST | `/api/v1/prepaid/*` | 预付费账户、充值地址、账户创建、地址更新、流水列表和 XLSX 导出 |
+| GET/PUT | `/api/v1/strategy/*` | 查询及配置归集、提现、平衡策略 |
 
 Swagger UI: `http://localhost:8081/docs`
 
-接口路径遵循以下约定：使用小写、直观且与业务一致的功能名称，例如 `payment`、`recharge`、`summary`、`balance` 和 `withdraw`；必要的操作使用 `login`、`approve`、`confirm`、`check-status` 等明确词汇。查询参数统一使用 `camelCase`。
+接口路径遵循以下约定：使用小写、直观且与业务一致的功能名称，例如 `payment`、`recharge`、`summary`、`balance` 和 `withdraw`；列表统一使用 `/list`，创建、申请等操作分别使用 `/create`、`/apply` 等明确词汇。查询参数统一使用 `camelCase`。
 
 每个响应都会返回 `X-Request-Id` 响应头。服务日志包含相同的请求 ID、HTTP 方法、路径、状态码和耗时；日志禁止记录密码、验证码、JWT、API Secret 和完整请求体。错误响应也包含 `requestId`，可直接用于日志检索。
 
@@ -171,7 +171,7 @@ curl -X POST http://localhost:8081/api/v1/auth/password/login \
   -H 'Content-Type: application/json' \
   -d '{"email":"new@example.com","password":"StrongPass123"}'
 
-curl 'http://localhost:8081/api/v1/payment?orgId=100&page=0&size=20' \
+curl 'http://localhost:8081/api/v1/payment/list?orgId=100&page=0&size=20' \
   -H 'Authorization: Bearer <token>'
 ```
 
