@@ -5,6 +5,9 @@ server:
 spring:
   application:
     name: invicta
+  config:
+    # 本地 .env 已加入 .gitignore，便于 IntelliJ 直接启动且不会提交真实配置。
+    import: optional:file:.env[.properties]
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
   messages:
