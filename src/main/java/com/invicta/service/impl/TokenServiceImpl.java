@@ -4,9 +4,11 @@ import com.invicta.service.TokenService;
 
 import com.invicta.config.InvictaProperties;
 import com.invicta.model.OrganizationAccount;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
+import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -38,7 +40,8 @@ public class TokenServiceImpl implements TokenService {
                 .claim("profileCompleted", account.profileCompleted())
                 .claim("roles", List.copyOf(account.roles()))
                 .build();
-        String token = encoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
+        JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
+        String token = encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
         return new TokenResponse(token, "Bearer", expiresAt);
     }
 }
