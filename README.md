@@ -50,6 +50,8 @@ Swagger UI: `http://localhost:8081/swagger-ui.html`
 
 接口路径遵循以下约定：使用小写、直观且与业务一致的功能名称，例如 `payment`、`recharge`、`summary`、`balance` 和 `withdraw`；列表统一使用 `/list`，创建、申请等操作分别使用 `/create`、`/apply` 等明确词汇。查询参数统一使用 `camelCase`。
 
+URL 不使用动态路径参数；单条查询统一使用 `/detail?id=...&orgId=...`，其他 URL 参数也都以 `key=value` 形式传递。例如钱包币种余额使用 `/api/v1/summary/wallet/currency/list?walletId=...&orgId=...`。POST/PUT 的结构化业务数据仍放在 JSON 请求体中。
+
 每个响应都会返回 `X-Request-Id` 响应头。服务日志包含相同的请求 ID、HTTP 方法、路径、状态码和耗时；日志禁止记录密码、验证码、JWT、API Secret 和完整请求体。错误响应也包含 `requestId`，可直接用于日志检索。
 
 ## 代码结构

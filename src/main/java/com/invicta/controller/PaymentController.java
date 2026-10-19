@@ -46,11 +46,11 @@ public class PaymentController {
     }
 
     @Operation(summary = "查询收单订单详情")
-    @GetMapping("/{paymentId}")
+    @GetMapping("/detail")
     public OrderModels.PaymentView detail(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
-            @Parameter(description = "收单订单 ID", required = true) @PathVariable long paymentId) {
-        return service.detail(CurrentUser.from(jwt), orgId, paymentId);
+            @Parameter(description = "收单订单 ID", required = true) @RequestParam("id") long id) {
+        return service.detail(CurrentUser.from(jwt), orgId, id);
     }
 
     @Operation(summary = "统计收单订单")

@@ -49,10 +49,10 @@ public class SummaryController {
     }
 
     @Operation(summary = "查询资金归集订单详情")
-    @GetMapping("/{id}")
+    @GetMapping("/detail")
     public SummaryModels.Detail detail(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
-            @Parameter(description = "归集订单 ID", required = true) @PathVariable long id) {
+            @Parameter(description = "归集订单 ID", required = true) @RequestParam("id") long id) {
         return service.detail(CurrentUser.from(jwt), orgId, id);
     }
 
@@ -69,10 +69,10 @@ public class SummaryController {
     }
 
     @Operation(summary = "查询钱包币种余额")
-    @GetMapping("/wallets/{walletId}/currencies")
+    @GetMapping("/wallet/currency/list")
     public List<SummaryModels.WalletCurrencyBalance> walletCurrencies(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
-            @Parameter(description = "钱包 ID", required = true) @PathVariable long walletId) {
+            @Parameter(description = "钱包 ID", required = true) @RequestParam("walletId") long walletId) {
         return service.walletCurrencies(CurrentUser.from(jwt), orgId, walletId);
     }
 

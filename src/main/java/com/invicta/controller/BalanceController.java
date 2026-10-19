@@ -48,10 +48,10 @@ public class BalanceController {
     }
 
     @Operation(summary = "查询资金平衡订单详情")
-    @GetMapping("/{id}")
+    @GetMapping("/detail")
     public BalanceModels.Detail detail(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
-            @Parameter(description = "平衡订单 ID", required = true) @PathVariable long id) {
+            @Parameter(description = "平衡订单 ID", required = true) @RequestParam("id") long id) {
         return service.detail(CurrentUser.from(jwt), orgId, id);
     }
 

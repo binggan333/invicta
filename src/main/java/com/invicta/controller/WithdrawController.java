@@ -49,10 +49,10 @@ public class WithdrawController {
     }
 
     @Operation(summary = "查询提现订单详情")
-    @GetMapping("/{id}")
+    @GetMapping("/detail")
     public OrderModels.WithdrawView detail(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
-            @Parameter(description = "提现订单 ID", required = true) @PathVariable long id) {
+            @Parameter(description = "提现订单 ID", required = true) @RequestParam("id") long id) {
         return service.detail(CurrentUser.from(jwt), orgId, id);
     }
 
@@ -78,19 +78,19 @@ public class WithdrawController {
     }
 
     @Operation(summary = "为提现订单创建审批提案")
-    @PostMapping("/{id}/approve")
+    @PostMapping("/approve")
     public LegacyApiResponse approve(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
-            @Parameter(description = "提现订单 ID", required = true) @PathVariable long id,
+            @Parameter(description = "提现订单 ID", required = true) @RequestParam("id") long id,
             @Valid @RequestBody OperationRequests.WithdrawalApproval request) {
         return service.approve(CurrentUser.from(jwt), orgId, id, request);
     }
 
     @Operation(summary = "确认提现审批提案")
-    @PostMapping("/proposal/{id}/confirm")
+    @PostMapping("/proposal/confirm")
     public LegacyApiResponse confirm(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
-            @Parameter(description = "审批提案 ID", required = true) @PathVariable long id,
+            @Parameter(description = "审批提案 ID", required = true) @RequestParam("id") long id,
             @Valid @RequestBody OperationRequests.WithdrawalConfirmation request) {
         return service.confirm(CurrentUser.from(jwt), orgId, id, request);
     }

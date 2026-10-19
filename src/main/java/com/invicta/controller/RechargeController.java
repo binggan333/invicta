@@ -46,10 +46,10 @@ public class RechargeController {
     }
 
     @Operation(summary = "查询充值订单详情")
-    @GetMapping("/{id}")
+    @GetMapping("/detail")
     public OrderModels.RechargeView detail(@AuthenticationPrincipal Jwt jwt,
             @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
-            @Parameter(description = "充值订单 ID", required = true) @PathVariable long id) {
+            @Parameter(description = "充值订单 ID", required = true) @RequestParam("id") long id) {
         return service.detail(CurrentUser.from(jwt), orgId, id);
     }
 
