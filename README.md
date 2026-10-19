@@ -46,7 +46,7 @@ Invicta 是基于现有 UTC Pay 数据库的独立统计与看板服务。它是
 | GET/POST | `/api/v1/prepaid/*` | 预付费账户、充值地址、账户创建、地址更新、流水列表和 XLSX 导出 |
 | GET/PUT | `/api/v1/strategy/*` | 查询及配置归集、提现、平衡策略 |
 
-Swagger UI: `http://localhost:8081/docs`
+Swagger UI: `http://localhost:8081/swagger-ui.html`
 
 接口路径遵循以下约定：使用小写、直观且与业务一致的功能名称，例如 `payment`、`recharge`、`summary`、`balance` 和 `withdraw`；列表统一使用 `/list`，创建、申请等操作分别使用 `/create`、`/apply` 等明确词汇。查询参数统一使用 `camelCase`。
 

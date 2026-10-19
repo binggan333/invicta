@@ -49,7 +49,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
         return path.startsWith("/actuator/") || path.startsWith("/v3/api-docs")
-                || path.startsWith("/docs");
+                || path.startsWith("/swagger-ui");
     }
 
     private String resolveRequestId(String candidate) {
