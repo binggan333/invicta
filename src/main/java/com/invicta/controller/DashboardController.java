@@ -30,12 +30,12 @@ public class DashboardController {
     @Operation(summary = "查询经营看板概览")
     @GetMapping("/summary")
     public DashboardModels.Summary summary(@AuthenticationPrincipal Jwt jwt,
-            @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
             @Parameter(description = "区块链网络 ID") @RequestParam(required = false) Integer chainId,
             @Parameter(description = "开始时间（包含），ISO-8601") @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @Parameter(description = "结束时间（不包含），ISO-8601") @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
-        return service.summary(CurrentUser.from(jwt), orgId, chainId, from, to);
+        CurrentUser user = CurrentUser.from(jwt);
+        return service.summary(user, user.orgId(), chainId, from, to);
     }
 }

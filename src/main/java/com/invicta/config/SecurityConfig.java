@@ -33,7 +33,8 @@ public class SecurityConfig {
                                 "/api/v1/auth/register",
                                 "/actuator/health/**", "/v3/api-docs/**",
                                 "/swagger-ui.html", "/swagger-ui/**").permitAll()
-                        .requestMatchers("/api/v1/auth/me", "/api/v1/auth/profile").authenticated()
+                        .requestMatchers("/api/v1/auth/me", "/api/v1/auth/profile",
+                                "/api/v1/organization/me").authenticated()
                         .anyRequest().access((authentication, context) -> {
                             if (authentication.get() instanceof JwtAuthenticationToken token) {
                                 return new AuthorizationDecision(Boolean.TRUE.equals(

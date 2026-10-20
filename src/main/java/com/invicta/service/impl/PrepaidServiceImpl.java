@@ -72,9 +72,9 @@ public class PrepaidServiceImpl implements PrepaidService {
     }
 
     @Override
-    public List<PrepaidModels.RechargeWallet> rechargeWallets(CurrentUser user, long orgId) {
+    public List<PrepaidModels.RechargeWallet> rechargeWallets(CurrentUser user, long orgId, Integer chainId) {
         access.requireRead(user, orgId);
-        return activeWallets(orgId).stream().map(this::toWallet).toList();
+        return activeWallets(orgId, chainId).stream().map(this::toWallet).toList();
     }
 
     @Override
@@ -134,8 +134,13 @@ public class PrepaidServiceImpl implements PrepaidService {
     }
 
     private List<OrgPrepaidRechargeWalletEntity> activeWallets(long orgId) {
+        return activeWallets(orgId, null);
+    }
+
+    private List<OrgPrepaidRechargeWalletEntity> activeWallets(long orgId, Integer chainId) {
         LambdaQueryWrapper<OrgPrepaidRechargeWalletEntity> query = Wrappers.lambdaQuery();
         query.eq(OrgPrepaidRechargeWalletEntity::getOrgId, orgId);
+        query.eq(chainId != null, OrgPrepaidRechargeWalletEntity::getChainId, chainId);
         query.eq(OrgPrepaidRechargeWalletEntity::getIsDelete, 0);
         query.orderByAsc(OrgPrepaidRechargeWalletEntity::getChainId);
         return rechargeWalletMapper.selectList(query);

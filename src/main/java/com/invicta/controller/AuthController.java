@@ -85,7 +85,7 @@ public class AuthController {
     }
 
     @Operation(summary = "完善当前商户资料")
-    @PutMapping("/profile")
+    @PostMapping("/profile")
     public TokenService.TokenResponse completeProfile(@AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody OrganizationProfileRequest request) {
         return authService.completeProfile(Long.parseLong(jwt.getSubject()), request);

@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * 归集、平衡和提现写操作的请求模型。
- * 商户 ID 始终从查询参数和登录权限中校验，不允许通过请求体覆盖。
+ * 商户 ID 始终从登录令牌获取，不允许通过请求参数或请求体覆盖。
  */
 public final class OperationRequests {
     private OperationRequests() {}

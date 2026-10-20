@@ -13,5 +13,6 @@ public interface OrderSummaryMapper extends BaseMapper<OrderSummaryEntity> {
     SummaryModels.Statistics selectStatistics(@Param(Constants.WRAPPER) Wrapper<OrderSummaryEntity> query);
 
     List<SummaryModels.WalletCurrencyBalance> selectWalletBalances(@Param("orgId") long orgId,
-                                                                   @Param("walletId") long walletId);
+                                                                   @Param("walletId") long walletId,
+                                                                   @Param("chainId") Integer chainId);
 }

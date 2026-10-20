@@ -11,7 +11,7 @@ import java.util.List;
 public interface PrepaidService {
     PrepaidModels.Account account(CurrentUser user, long orgId);
 
-    List<PrepaidModels.RechargeWallet> rechargeWallets(CurrentUser user, long orgId);
+    List<PrepaidModels.RechargeWallet> rechargeWallets(CurrentUser user, long orgId, Integer chainId);
 
     List<PrepaidModels.RechargeWallet> createRechargeWallets(CurrentUser user, long orgId);
 

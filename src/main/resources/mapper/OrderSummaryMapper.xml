@@ -21,6 +21,7 @@
         LEFT JOIN sys_currency c ON c.currency_id = b.currency_id
         WHERE b.wallet_id = #{walletId}
           AND u.org_id = #{orgId}
+          <if test="chainId != null">AND b.chain_id = #{chainId}</if>
           AND COALESCE(b.is_delete, 0) = 0
         ORDER BY b.currency_id
     </select>

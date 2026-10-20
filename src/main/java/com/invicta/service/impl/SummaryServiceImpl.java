@@ -81,9 +81,10 @@ public class SummaryServiceImpl implements SummaryService {
         return summaryMapper.selectStatistics(query(orgId, chainId, status, keyword, from, to));
     }
 
-    public List<SummaryModels.WalletCurrencyBalance> walletCurrencies(CurrentUser user, long orgId, long walletId) {
+    public List<SummaryModels.WalletCurrencyBalance> walletCurrencies(CurrentUser user, long orgId,
+                                                                       long walletId, Integer chainId) {
         access.requireRead(user, orgId);
-        return summaryMapper.selectWalletBalances(orgId, walletId);
+        return summaryMapper.selectWalletBalances(orgId, walletId, chainId);
     }
 
     public LegacyApiResponse create(CurrentUser user, long orgId, OperationRequests.SummaryCreate request) {

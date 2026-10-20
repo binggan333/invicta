@@ -33,7 +33,6 @@ public class RechargeController {
     @Operation(summary = "分页查询充值订单")
     @GetMapping("/list")
     public PageResponse<OrderModels.RechargeView> list(@AuthenticationPrincipal Jwt jwt,
-            @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
             @Parameter(description = "区块链网络 ID") @RequestParam(required = false) Integer chainId,
             @Parameter(description = "币种 ID") @RequestParam(required = false) Integer currencyId,
             @Parameter(description = "充值状态编码") @RequestParam(required = false) Integer status,
@@ -42,27 +41,28 @@ public class RechargeController {
             @Parameter(description = "结束时间（不包含），ISO-8601") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
             @Parameter(description = "页码，从 0 开始") @RequestParam(defaultValue = "0") @Min(0) int page,
             @Parameter(description = "每页记录数，最大 200") @RequestParam(defaultValue = "20") @Min(1) @Max(200) int size) {
-        return service.list(CurrentUser.from(jwt), orgId, chainId, currencyId, status, keyword, from, to, new PageQuery(page, size));
+        CurrentUser user = CurrentUser.from(jwt);
+        return service.list(user, user.orgId(), chainId, currencyId, status, keyword, from, to, new PageQuery(page, size));
     }
 
     @Operation(summary = "查询充值订单详情")
     @GetMapping("/detail")
     public OrderModels.RechargeView detail(@AuthenticationPrincipal Jwt jwt,
-            @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
             @Parameter(description = "充值订单 ID", required = true) @RequestParam("id") long id) {
-        return service.detail(CurrentUser.from(jwt), orgId, id);
+        CurrentUser user = CurrentUser.from(jwt);
+        return service.detail(user, user.orgId(), id);
     }
 
     @Operation(summary = "统计充值订单")
     @GetMapping("/statistics")
     public OrderModels.Statistics statistics(@AuthenticationPrincipal Jwt jwt,
-            @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
             @Parameter(description = "区块链网络 ID") @RequestParam(required = false) Integer chainId,
             @Parameter(description = "币种 ID") @RequestParam(required = false) Integer currencyId,
             @Parameter(description = "充值状态编码") @RequestParam(required = false) Integer status,
             @Parameter(description = "交易哈希、转出地址或钱包 ID 关键字") @RequestParam(required = false) String keyword,
             @Parameter(description = "开始时间（包含），ISO-8601") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @Parameter(description = "结束时间（不包含），ISO-8601") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
-        return service.statistics(CurrentUser.from(jwt), orgId, chainId, currencyId, status, keyword, from, to);
+        CurrentUser user = CurrentUser.from(jwt);
+        return service.statistics(user, user.orgId(), chainId, currencyId, status, keyword, from, to);
     }
 }

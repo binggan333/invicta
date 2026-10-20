@@ -30,32 +30,32 @@ public class StrategyController {
     @Operation(summary = "查询商户策略")
     @GetMapping("/info")
     public StrategyModels.View get(@AuthenticationPrincipal Jwt jwt,
-            @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
             @Parameter(description = "区块链网络 ID", required = true) @RequestParam int chainId) {
-        return service.get(CurrentUser.from(jwt), orgId, chainId);
+        CurrentUser user = CurrentUser.from(jwt);
+        return service.get(user, user.orgId(), chainId);
     }
 
     @Operation(summary = "保存归集策略")
     @PutMapping("/summary")
     public LegacyApiResponse saveSummary(@AuthenticationPrincipal Jwt jwt,
-            @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
             @Valid @RequestBody StrategyModels.SummaryRequest request) {
-        return service.saveSummary(CurrentUser.from(jwt), orgId, request);
+        CurrentUser user = CurrentUser.from(jwt);
+        return service.saveSummary(user, user.orgId(), request);
     }
 
     @Operation(summary = "保存提现策略")
     @PutMapping("/withdraw")
     public LegacyApiResponse saveWithdraw(@AuthenticationPrincipal Jwt jwt,
-            @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
             @Valid @RequestBody StrategyModels.WithdrawRequest request) {
-        return service.saveWithdraw(CurrentUser.from(jwt), orgId, request);
+        CurrentUser user = CurrentUser.from(jwt);
+        return service.saveWithdraw(user, user.orgId(), request);
     }
 
     @Operation(summary = "保存平衡策略")
     @PutMapping("/balance")
     public LegacyApiResponse saveBalance(@AuthenticationPrincipal Jwt jwt,
-            @Parameter(description = "商户 ID", required = true) @RequestParam long orgId,
             @Valid @RequestBody StrategyModels.BalanceRequest request) {
-        return service.saveBalance(CurrentUser.from(jwt), orgId, request);
+        CurrentUser user = CurrentUser.from(jwt);
+        return service.saveBalance(user, user.orgId(), request);
     }
 }

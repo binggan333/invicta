@@ -7,15 +7,17 @@ import java.time.LocalDateTime;
 public final class SystemModels {
     private SystemModels() {}
 
-    @Schema(description = "商户信息")
+    @Schema(description = "当前登录商户资料")
     public record Organization(
             @Schema(description = "商户 ID") long orgId,
             @Schema(description = "商户名称") String orgName,
             @Schema(description = "历史联系邮箱，不作为 Invicta 登录邮箱") String orgEmail,
+            @Schema(description = "当前登录邮箱；已有商户可能使用历史联系邮箱登录") String email,
             @Schema(description = "联系电话") String orgPhone,
-            @Schema(description = "商户类型编码") int orgType,
+            @Schema(description = "商户类型编码") Integer orgType,
             @Schema(description = "上级机构 ID") Long orgParentId,
-            @Schema(description = "商户状态编码") int orgState,
+            @Schema(description = "商户状态编码") Integer orgState,
+            @Schema(description = "是否已填写商户资料") Boolean profileCompleted,
             @Schema(description = "创建时间") LocalDateTime createTime) {}
 
     @Schema(description = "区块链网络")

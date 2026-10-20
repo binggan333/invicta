@@ -16,7 +16,8 @@ public interface SummaryService {
     SummaryModels.Detail detail(CurrentUser user, long orgId, long id);
     SummaryModels.Statistics statistics(CurrentUser user, long orgId, Integer chainId, Integer status,
             String keyword, LocalDateTime from, LocalDateTime to);
-    List<SummaryModels.WalletCurrencyBalance> walletCurrencies(CurrentUser user, long orgId, long walletId);
+    List<SummaryModels.WalletCurrencyBalance> walletCurrencies(CurrentUser user, long orgId,
+                                                                long walletId, Integer chainId);
     LegacyApiResponse create(CurrentUser user, long orgId, OperationRequests.SummaryCreate request);
     LegacyApiResponse checkStatus(CurrentUser user, long orgId, OperationRequests.SummaryStatusCheck request);
 }
