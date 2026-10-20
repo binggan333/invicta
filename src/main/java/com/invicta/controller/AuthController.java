@@ -35,7 +35,7 @@ public class AuthController {
         this.messages = messages;
     }
 
-    @Operation(summary = "发送邮箱验证码", description = "验证码和重复发送冷却时间均为 60 秒；验证码成功使用后立即失效。")
+    @Operation(summary = "发送邮箱验证码", description = "purpose 必填：REGISTRATION 用于新账号注册，对应 /api/v1/auth/register；LOGIN 用于已注册账号验证码登录，对应 /api/v1/auth/email/login。历史商户请使用 /api/v1/auth/existing/code，无需填写 purpose。验证码和重复发送冷却时间均为 60 秒；验证码成功使用后立即失效。")
     @SecurityRequirements
     @PostMapping("/email/code")
     @ResponseStatus(HttpStatus.ACCEPTED)
@@ -110,9 +110,10 @@ public class AuthController {
     public record RequestCode(
             @NotBlank(message = "{validation.email.required}")
             @Email(message = "{validation.email.invalid}")
-            @Schema(description = "登录邮箱", example = "owner@example.com") String email,
+            @Schema(description = "接收验证码的邮箱。注册时填写新邮箱；登录时填写已注册的 Invicta 登录邮箱。历史商户请改用已有商户验证码接口。", example = "owner@example.com") String email,
             @NotNull(message = "{validation.purpose.required}")
-            @Schema(description = "验证码用途：LOGIN 登录，REGISTRATION 注册", example = "LOGIN") EmailCodePurpose purpose) {}
+            @Schema(description = "必填。REGISTRATION：新账号注册，验证码仅可用于 /api/v1/auth/register；LOGIN：已注册账号验证码登录，验证码仅可用于 /api/v1/auth/email/login。两种验证码不可混用。",
+                    allowableValues = {"REGISTRATION", "LOGIN"}, example = "LOGIN") EmailCodePurpose purpose) {}
 
     @Schema(name = "EmailCodeLoginRequest", description = "验证码登录请求")
     public record VerifyCode(
