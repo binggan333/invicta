@@ -48,7 +48,7 @@ public class StrategyServiceImpl implements StrategyService {
 
     @Override
     public LegacyApiResponse saveSummary(CurrentUser user, long orgId, StrategyModels.SummaryRequest request) {
-        access.requireRead(user, orgId);
+        access.requireWrite(user, orgId);
         Map<String, Object> body = baseBody(orgId, request);
         body.put("summarySingleGt", request.summarySingleGt());
         body.put("summaryTotalGt", request.summaryTotalGt());
@@ -62,7 +62,7 @@ public class StrategyServiceImpl implements StrategyService {
 
     @Override
     public LegacyApiResponse saveWithdraw(CurrentUser user, long orgId, StrategyModels.WithdrawRequest request) {
-        access.requireRead(user, orgId);
+        access.requireWrite(user, orgId);
         Map<String, Object> body = baseBody(orgId, request);
         body.put("withdrawMaxWallet", request.withdrawMaxWallet());
         body.put("withdrawMaxAmount", request.withdrawMaxAmount());
@@ -73,7 +73,7 @@ public class StrategyServiceImpl implements StrategyService {
 
     @Override
     public LegacyApiResponse saveBalance(CurrentUser user, long orgId, StrategyModels.BalanceRequest request) {
-        access.requireRead(user, orgId);
+        access.requireWrite(user, orgId);
         Map<String, Object> body = baseBody(orgId, request);
         body.put("balanceColdGt", request.balanceColdGt());
         body.put("balanceHotLt", request.balanceHotLt());

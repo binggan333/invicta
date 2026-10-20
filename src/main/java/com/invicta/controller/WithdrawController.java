@@ -36,6 +36,7 @@ public class WithdrawController {
     @Operation(summary = "分页查询提现订单")
     @GetMapping("/list")
     public PageResponse<OrderModels.WithdrawView> list(@AuthenticationPrincipal Jwt jwt,
+            @Parameter(description = "目标商户 ID；仅超管可指定其他商户，不传则查询自己") @RequestParam(required = false) Long orgId,
             @Parameter(description = "区块链网络 ID") @RequestParam(required = false) Integer chainId,
             @Parameter(description = "币种 ID") @RequestParam(required = false) Integer currencyId,
             @Parameter(description = "提现状态编码") @RequestParam(required = false) Integer status,
@@ -45,20 +46,22 @@ public class WithdrawController {
             @Parameter(description = "页码，从 0 开始") @RequestParam(defaultValue = "0") @Min(0) int page,
             @Parameter(description = "每页记录数，最大 200") @RequestParam(defaultValue = "20") @Min(1) @Max(200) int size) {
         CurrentUser user = CurrentUser.from(jwt);
-        return service.list(user, user.orgId(), chainId, currencyId, status, keyword, from, to, new PageQuery(page, size));
+        return service.list(user, user.requestedReadOrgId(orgId), chainId, currencyId, status, keyword, from, to, new PageQuery(page, size));
     }
 
     @Operation(summary = "查询提现订单详情")
     @GetMapping("/detail")
     public OrderModels.WithdrawView detail(@AuthenticationPrincipal Jwt jwt,
+            @Parameter(description = "目标商户 ID；仅超管可指定其他商户") @RequestParam(required = false) Long orgId,
             @Parameter(description = "提现订单 ID", required = true) @RequestParam("id") long id) {
         CurrentUser user = CurrentUser.from(jwt);
-        return service.detail(user, user.orgId(), id);
+        return service.detail(user, user.requestedReadOrgId(orgId), id);
     }
 
     @Operation(summary = "统计提现订单")
     @GetMapping("/statistics")
     public OrderModels.Statistics statistics(@AuthenticationPrincipal Jwt jwt,
+            @Parameter(description = "目标商户 ID；仅超管可指定其他商户") @RequestParam(required = false) Long orgId,
             @Parameter(description = "区块链网络 ID") @RequestParam(required = false) Integer chainId,
             @Parameter(description = "币种 ID") @RequestParam(required = false) Integer currencyId,
             @Parameter(description = "提现状态编码") @RequestParam(required = false) Integer status,
@@ -66,7 +69,7 @@ public class WithdrawController {
             @Parameter(description = "开始时间（包含），ISO-8601") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @Parameter(description = "结束时间（不包含），ISO-8601") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
         CurrentUser user = CurrentUser.from(jwt);
-        return service.statistics(user, user.orgId(), chainId, currencyId, status, keyword, from, to);
+        return service.statistics(user, user.requestedReadOrgId(orgId), chainId, currencyId, status, keyword, from, to);
     }
 
     @Operation(summary = "提交提现申请", description = "Invicta 校验权限后将写操作转发给 UTC Pay。")

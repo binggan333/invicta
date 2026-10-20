@@ -10,11 +10,12 @@ Invicta 是基于现有 UTC Pay 数据库的独立统计与看板服务。它是
 - 新增、更新、删除必须封装为明确的业务服务，并通过 `LegacyApiClient` 调用旧平台 API；禁止通用透传代理。
 - 登录使用唯一的 `sys_organ.email`，支持邮箱验证码或密码，JWT 为无状态访问令牌，不再依赖 TronLink 或 MetaMask。
 - 密码使用 BCrypt 存储；Invicta 只读数据库，注册和资料更新均通过旧平台 API 完成。
-- 历史 `org_email` 不迁移到新 `email`。已有商户选择“已有账户登录”，使用商户名定位账号，验证码仍发送到原 `org_email`。
+- 历史 `org_email` 不迁移到新 `email`。已有机构（包括 UTC Pay 中现存的运营机构账号）选择“已有账户登录”，使用机构名定位账号，验证码仍发送到原 `org_email`；不会通过公开注册创建新的运营机构账号。
+- 现有超管须在 UTC Pay 中为启用状态，`email` 为空，`org_email` 可收信，且机构名能唯一定位；登录后取得运营机构 JWT。超管可查询所有机构及其业务数据，但不能经 Invicta 执行写操作。
 - 已有账号验证码的 Redis 身份键包含 `orgId`；即使多个商户共用一个历史邮箱，验证码也不会在商户之间复用。
 - 验证码和发送冷却均存储在 Redis：有效期 60 秒、同邮箱同用途 60 秒内不可重复发送，验证成功后原子删除且不可复用。
 - 登录验证码与注册验证码按用途隔离。注册通过验证码后转调旧平台注册 API，并返回仅可完善资料的 JWT。
-- 新账号完成商户名和商户类型（3 专业版、4 轻量版、5 标准版）前，只能访问 `/auth/me`、`/auth/profile` 和 `/organization/me`。
+- 新账号完成机构名和机构类型（1 一级代理、3 专业版、4 轻量版、5 标准版；不能选择 0 超管或已废弃的 2）前，只能访问 `/auth/me`、`/auth/profile` 和 `/organization/me`。
 - 注册和资料完善调用 UTC Pay 的 `/api/invicta/**` 外部接口，沿用 `X-PAY-KEY`、`X-PAY-SIGN`、`X-PAY-TIMESTAMP` 签名规则。
 - 新用户注册成功后，Invicta 自动调用 UTC Pay 的预付费充值账户创建接口；UTC Pay 仍按原有方式生成各链充值地址并初始化预付费账户。登录流程不修改 UTC Pay 的原有逻辑。
 - 用户向预付费地址充值后，仍由 UTC Pay 原有链上监听和入账流程更新账户余额及流水；Invicta 负责查询、展示和导出。
@@ -32,9 +33,10 @@ Invicta 是基于现有 UTC Pay 数据库的独立统计与看板服务。它是
 | POST | `/api/v1/auth/existing/login` | 已有账户按商户名验证并登录 |
 | POST | `/api/v1/auth/password/login` | 使用邮箱和密码登录 |
 | POST | `/api/v1/auth/register` | 验证邮箱、设置密码并创建待完善账号 |
-| POST | `/api/v1/auth/profile` | 填写商户名和商户类型，返回完整权限 JWT |
+| POST | `/api/v1/auth/profile` | 填写机构名和机构类型（仅 1、3、4、5），返回完整权限 JWT |
 | GET | `/api/v1/auth/me` | 当前账号 |
-| GET | `/api/v1/organization/me` | 当前登录商户资料 |
+| GET | `/api/v1/organization/me` | 当前登录机构资料 |
+| GET | `/api/v1/organization/list` | 超管分页查询所有机构，可按 `orgId` 等条件筛选 |
 | GET | `/api/v1/chain/list` | 链列表 |
 | GET | `/api/v1/currency/list` | 币种列表 |
 | GET | `/api/v1/payment/list` | 收单分页列表；同模块提供详情和统计接口 |
@@ -50,7 +52,7 @@ Swagger UI: `http://localhost:8081/swagger-ui.html`
 
 接口路径遵循以下约定：使用小写、直观且与业务一致的功能名称，例如 `payment`、`recharge`、`summary`、`balance` 和 `withdraw`；列表统一使用 `/list`，创建、申请等操作分别使用 `/create`、`/apply` 等明确词汇。查询参数统一使用 `camelCase`。
 
-URL 不使用动态路径参数；单条查询统一使用 `/detail?id=...`，其他 URL 参数也都以 `key=value` 形式传递。例如钱包币种余额使用 `/api/v1/summary/wallet/currency/list?walletId=...&chainId=...`。商户 ID 从登录 JWT 获取，不需要、也不能通过请求指定；各业务列表和统计接口可通过可选的 `chainId` 切换链，不传则查询全部链。链列表用于提供切换选项，预付费账户为商户级总账户，不按链筛选。POST/PUT 的结构化业务数据仍放在 JSON 请求体中。
+URL 不使用动态路径参数；单条查询统一使用 `/detail?id=...`，其他 URL 参数也都以 `key=value` 形式传递。例如钱包币种余额使用 `/api/v1/summary/wallet/currency/list?walletId=...&chainId=...`。普通机构不传 `orgId` 时从登录 JWT 获取；若传其他机构的 ID，返回 403。仅超管可以在查询接口传 `orgId` 指定目标机构，例如 `/api/v1/recharge/list?orgId=2479&chainId=1`；写接口不接受目标机构 ID，且超管在 Invicta 中仅有读取权限。各业务列表和统计接口可通过可选的 `chainId` 切换链，不传则查询全部链。链列表用于提供切换选项，预付费账户为机构级总账户，不按链筛选。POST/PUT 的结构化业务数据仍放在 JSON 请求体中。
 
 每个响应都会返回 `X-Request-Id` 响应头。服务日志包含相同的请求 ID、HTTP 方法、路径、状态码和耗时；日志禁止记录密码、验证码、JWT、API Secret 和完整请求体。错误响应也包含 `requestId`，可直接用于日志检索。
 

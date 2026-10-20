@@ -88,7 +88,7 @@ public class SummaryServiceImpl implements SummaryService {
     }
 
     public LegacyApiResponse create(CurrentUser user, long orgId, OperationRequests.SummaryCreate request) {
-        access.requireRead(user, orgId);
+        access.requireWrite(user, orgId);
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("orgId", orgId);
         body.put("userWalletIds", request.userWalletIds());
@@ -101,7 +101,7 @@ public class SummaryServiceImpl implements SummaryService {
 
     public LegacyApiResponse checkStatus(CurrentUser user, long orgId,
                                          OperationRequests.SummaryStatusCheck request) {
-        access.requireRead(user, orgId);
+        access.requireWrite(user, orgId);
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("orgId", orgId);
         body.put("chainId", request.chainId());

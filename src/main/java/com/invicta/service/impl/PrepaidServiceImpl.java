@@ -79,7 +79,7 @@ public class PrepaidServiceImpl implements PrepaidService {
 
     @Override
     public List<PrepaidModels.RechargeWallet> createRechargeWallets(CurrentUser user, long orgId) {
-        access.requireRead(user, orgId);
+        access.requireWrite(user, orgId);
         legacy.postSigned("/api/invicta/prepaid/rechargeAddress/create",
                 Map.of("orgId", orgId), LegacyApiResponse.class);
         log.info("预付费充值账户创建完成 orgId={}", orgId);
@@ -88,7 +88,7 @@ public class PrepaidServiceImpl implements PrepaidService {
 
     @Override
     public List<PrepaidModels.RechargeWallet> refreshRechargeWallets(CurrentUser user, long orgId) {
-        access.requireRead(user, orgId);
+        access.requireWrite(user, orgId);
         Map<String, Object> body = Map.of("orgId", orgId);
         legacy.postSigned("/api/invicta/prepaid/recharge-wallet/refresh",
                 body, LegacyApiResponse.class);

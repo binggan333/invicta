@@ -73,7 +73,7 @@ public class WithdrawServiceImpl implements WithdrawService {
     }
 
     public LegacyApiResponse create(CurrentUser user, long orgId, OperationRequests.WithdrawalCreate request) {
-        access.requireRead(user, orgId);
+        access.requireWrite(user, orgId);
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("orgId", orgId);
         body.put("chainId", request.chainId());
@@ -88,7 +88,7 @@ public class WithdrawServiceImpl implements WithdrawService {
 
     public LegacyApiResponse approve(CurrentUser user, long orgId, long id,
                                      OperationRequests.WithdrawalApproval request) {
-        access.requireRead(user, orgId);
+        access.requireWrite(user, orgId);
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("executionOrgId", orgId);
         body.put("targetOrgId", orgId);
@@ -112,7 +112,7 @@ public class WithdrawServiceImpl implements WithdrawService {
 
     public LegacyApiResponse confirm(CurrentUser user, long orgId, long id,
                                      OperationRequests.WithdrawalConfirmation request) {
-        access.requireRead(user, orgId);
+        access.requireWrite(user, orgId);
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("orgId", orgId);
         body.put("proposalId", id);

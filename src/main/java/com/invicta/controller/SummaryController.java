@@ -37,6 +37,7 @@ public class SummaryController {
     @Operation(summary = "分页查询资金归集订单")
     @GetMapping("/list")
     public PageResponse<SummaryModels.View> list(@AuthenticationPrincipal Jwt jwt,
+            @Parameter(description = "目标商户 ID；仅超管可指定其他商户，不传则查询自己") @RequestParam(required = false) Long orgId,
             @Parameter(description = "区块链网络 ID") @RequestParam(required = false) Integer chainId,
             @Parameter(description = "归集状态编码") @RequestParam(required = false) Integer status,
             @Parameter(description = "交易哈希、业务编号或钱包 ID 关键字") @RequestParam(required = false) String keyword,
@@ -45,36 +46,39 @@ public class SummaryController {
             @Parameter(description = "页码，从 0 开始") @RequestParam(defaultValue = "0") @Min(0) int page,
             @Parameter(description = "每页记录数，最大 200") @RequestParam(defaultValue = "20") @Min(1) @Max(200) int size) {
         CurrentUser user = CurrentUser.from(jwt);
-        return service.list(user, user.orgId(), chainId, status, keyword, from, to, new PageQuery(page, size));
+        return service.list(user, user.requestedReadOrgId(orgId), chainId, status, keyword, from, to, new PageQuery(page, size));
     }
 
     @Operation(summary = "查询资金归集订单详情")
     @GetMapping("/detail")
     public SummaryModels.Detail detail(@AuthenticationPrincipal Jwt jwt,
+            @Parameter(description = "目标商户 ID；仅超管可指定其他商户") @RequestParam(required = false) Long orgId,
             @Parameter(description = "归集订单 ID", required = true) @RequestParam("id") long id) {
         CurrentUser user = CurrentUser.from(jwt);
-        return service.detail(user, user.orgId(), id);
+        return service.detail(user, user.requestedReadOrgId(orgId), id);
     }
 
     @Operation(summary = "统计资金归集订单")
     @GetMapping("/statistics")
     public SummaryModels.Statistics statistics(@AuthenticationPrincipal Jwt jwt,
+            @Parameter(description = "目标商户 ID；仅超管可指定其他商户") @RequestParam(required = false) Long orgId,
             @Parameter(description = "区块链网络 ID") @RequestParam(required = false) Integer chainId,
             @Parameter(description = "归集状态编码") @RequestParam(required = false) Integer status,
             @Parameter(description = "交易哈希、业务编号或钱包 ID 关键字") @RequestParam(required = false) String keyword,
             @Parameter(description = "开始时间（包含），ISO-8601") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @Parameter(description = "结束时间（不包含），ISO-8601") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
         CurrentUser user = CurrentUser.from(jwt);
-        return service.statistics(user, user.orgId(), chainId, status, keyword, from, to);
+        return service.statistics(user, user.requestedReadOrgId(orgId), chainId, status, keyword, from, to);
     }
 
     @Operation(summary = "查询钱包币种余额")
     @GetMapping("/wallet/currency/list")
     public List<SummaryModels.WalletCurrencyBalance> walletCurrencies(@AuthenticationPrincipal Jwt jwt,
+            @Parameter(description = "目标商户 ID；仅超管可指定其他商户") @RequestParam(required = false) Long orgId,
             @Parameter(description = "钱包 ID", required = true) @RequestParam("walletId") long walletId,
             @Parameter(description = "区块链网络 ID") @RequestParam(required = false) Integer chainId) {
         CurrentUser user = CurrentUser.from(jwt);
-        return service.walletCurrencies(user, user.orgId(), walletId, chainId);
+        return service.walletCurrencies(user, user.requestedReadOrgId(orgId), walletId, chainId);
     }
 
     @Operation(summary = "提交资金归集订单", description = "Invicta 校验权限后将写操作转发给 UTC Pay。")

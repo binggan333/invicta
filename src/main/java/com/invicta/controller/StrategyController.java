@@ -30,9 +30,10 @@ public class StrategyController {
     @Operation(summary = "查询商户策略")
     @GetMapping("/info")
     public StrategyModels.View get(@AuthenticationPrincipal Jwt jwt,
+            @Parameter(description = "目标商户 ID；仅超管可指定其他商户") @RequestParam(required = false) Long orgId,
             @Parameter(description = "区块链网络 ID", required = true) @RequestParam int chainId) {
         CurrentUser user = CurrentUser.from(jwt);
-        return service.get(user, user.orgId(), chainId);
+        return service.get(user, user.requestedReadOrgId(orgId), chainId);
     }
 
     @Operation(summary = "保存归集策略")

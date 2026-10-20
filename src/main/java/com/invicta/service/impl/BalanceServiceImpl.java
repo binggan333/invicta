@@ -97,7 +97,7 @@ public class BalanceServiceImpl implements BalanceService {
     }
 
     public LegacyApiResponse create(CurrentUser user, long orgId, OperationRequests.BalanceCreate request) {
-        access.requireRead(user, orgId);
+        access.requireWrite(user, orgId);
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("orgId", orgId);
         body.put("chainId", request.chainId());

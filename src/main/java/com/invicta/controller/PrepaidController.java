@@ -52,17 +52,19 @@ public class PrepaidController {
 
     @Operation(summary = "查询预付费账户")
     @GetMapping("/account")
-    public PrepaidModels.Account account(@AuthenticationPrincipal Jwt jwt) {
+    public PrepaidModels.Account account(@AuthenticationPrincipal Jwt jwt,
+            @Parameter(description = "目标商户 ID；仅超管可指定其他商户") @RequestParam(required = false) Long orgId) {
         CurrentUser user = CurrentUser.from(jwt);
-        return service.account(user, user.orgId());
+        return service.account(user, user.requestedReadOrgId(orgId));
     }
 
     @Operation(summary = "查询预付费充值地址", description = "每条记录对应一个区块链网络。向地址充值后，由 UTC Pay 的链上监听服务自动入账。")
     @GetMapping("/recharge-wallet/list")
     public List<PrepaidModels.RechargeWallet> rechargeWallets(@AuthenticationPrincipal Jwt jwt,
+            @Parameter(description = "目标商户 ID；仅超管可指定其他商户") @RequestParam(required = false) Long orgId,
             @Parameter(description = "区块链网络 ID") @RequestParam(required = false) Integer chainId) {
         CurrentUser user = CurrentUser.from(jwt);
-        return service.rechargeWallets(user, user.orgId(), chainId);
+        return service.rechargeWallets(user, user.requestedReadOrgId(orgId), chainId);
     }
 
     @Operation(summary = "创建预付费充值账户", description = "通过 UTC Pay 原有逻辑创建各链充值地址和预付费账户；重复调用不会重复创建。")
@@ -82,6 +84,7 @@ public class PrepaidController {
     @Operation(summary = "分页查询预付费流水")
     @GetMapping("/flow/list")
     public PageResponse<PrepaidModels.Flow> flows(@AuthenticationPrincipal Jwt jwt,
+            @Parameter(description = "目标商户 ID；仅超管可指定其他商户") @RequestParam(required = false) Long orgId,
             @Parameter(description = "区块链网络 ID") @RequestParam(required = false) Integer chainId,
             @Parameter(description = "开始时间（包含），ISO-8601") @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
@@ -91,12 +94,13 @@ public class PrepaidController {
             @Parameter(description = "每页记录数，最大 200") @RequestParam(defaultValue = "20")
             @Min(1) @Max(200) int size) {
         CurrentUser user = CurrentUser.from(jwt);
-        return service.flows(user, user.orgId(), chainId, from, to, new PageQuery(page, size));
+        return service.flows(user, user.requestedReadOrgId(orgId), chainId, from, to, new PageQuery(page, size));
     }
 
     @Operation(summary = "导出预付费流水", description = "导出 XLSX 文件，时间范围不能超过一年，最多导出 100000 条。")
     @GetMapping("/flow/export")
     public void export(@AuthenticationPrincipal Jwt jwt,
+            @Parameter(description = "目标商户 ID；仅超管可指定其他商户") @RequestParam(required = false) Long orgId,
             @Parameter(description = "区块链网络 ID") @RequestParam(required = false) Integer chainId,
             @Parameter(description = "开始时间（包含），ISO-8601", required = true) @RequestParam
             @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
@@ -105,7 +109,8 @@ public class PrepaidController {
             HttpServletResponse response) throws IOException {
         validateExportRange(from, to);
         CurrentUser user = CurrentUser.from(jwt);
-        if (service.countFlows(user, user.orgId(), chainId, from, to) > MAX_EXPORT_COUNT) {
+        long targetOrgId = user.requestedReadOrgId(orgId);
+        if (service.countFlows(user, targetOrgId, chainId, from, to) > MAX_EXPORT_COUNT) {
             throw new ResponseStatusException(BAD_REQUEST, "error.export.count-exceeded");
         }
         String filename = "prepaid-flow-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
@@ -122,7 +127,7 @@ public class PrepaidController {
             int page = 1;
             while (true) {
                 List<PrepaidModels.ExportRow> rows = service.exportPage(
-                        user, user.orgId(), chainId, from, to, page, EXPORT_PAGE_SIZE);
+                        user, targetOrgId, chainId, from, to, page, EXPORT_PAGE_SIZE);
                 if (rows.isEmpty()) {
                     break;
                 }

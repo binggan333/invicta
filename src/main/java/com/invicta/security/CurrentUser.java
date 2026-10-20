@@ -22,4 +22,15 @@ public record CurrentUser(long orgId, int orgType, boolean profileCompleted, Set
     public boolean agent() {
         return orgType == 1 || orgType == 2 || roles.contains("agent");
     }
+
+    public long requestedReadOrgId(Long requestedOrgId) {
+        if (requestedOrgId == null) {
+            return orgId;
+        }
+        if (requestedOrgId <= 0) {
+            throw new IllegalArgumentException("orgId must be positive");
+        }
+        // 此处仅确定查询目标；跨商户权限仍由业务服务统一校验。
+        return requestedOrgId;
+    }
 }
