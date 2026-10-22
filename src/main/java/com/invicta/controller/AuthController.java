@@ -18,7 +18,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -45,7 +44,6 @@ public class AuthController {
     @Operation(summary = "发送邮箱验证码", description = "purpose 必填：REGISTRATION 用于新账号注册，对应 /api/v1/auth/register；LOGIN 用于已注册账号验证码登录，对应 /api/v1/auth/email/login。历史商户请使用 /api/v1/auth/existing/code，无需填写 purpose。验证码和重复发送冷却时间均为 60 秒；验证码成功使用后立即失效。")
     @SecurityRequirements
     @PostMapping("/email/code")
-    @ResponseStatus(HttpStatus.ACCEPTED)
     public AuthModels.MessageResponse requestCode(@Valid @RequestBody RequestCode request) {
         authService.requestCode(request.email(), request.purpose());
         return new AuthModels.MessageResponse(messages.getMessage("response.verification-code-sent", null,
@@ -62,7 +60,6 @@ public class AuthController {
     @Operation(summary = "为已有商户发送验证码", description = "按商户名称定位尚未设置新登录邮箱的历史商户，并向历史联系邮箱发送验证码。")
     @SecurityRequirements
     @PostMapping("/existing/code")
-    @ResponseStatus(HttpStatus.ACCEPTED)
     public AuthModels.MessageResponse requestExistingCode(@Valid @RequestBody ExistingRequestCode request) {
         authService.requestExistingAccountCode(request.orgName());
         return new AuthModels.MessageResponse(messages.getMessage("response.verification-code-sent", null,
@@ -86,7 +83,6 @@ public class AuthController {
     @Operation(summary = "注册新账号", description = "校验注册验证码并通过 UTC Pay 创建待完善商户账号。")
     @SecurityRequirements
     @PostMapping("/register")
-    @ResponseStatus(HttpStatus.CREATED)
     public TokenService.TokenResponse register(@Valid @RequestBody RegistrationRequest request) {
         return authService.register(request);
     }

@@ -25,7 +25,8 @@ class GlobalExceptionHandlerTest {
         ResponseEntity<ApiError> response = handler.invalidCode(new VerificationCodeInvalidException());
 
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().message()).isEqualTo("验证码已失效");
+        assertThat(response.getBody().code()).isEqualTo("verification_code_invalid");
+        assertThat(response.getBody().message()).isEqualTo("验证码错误或已失效");
     }
 
     @Test

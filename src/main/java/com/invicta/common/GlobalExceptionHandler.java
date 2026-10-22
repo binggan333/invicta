@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -33,13 +32,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({IllegalArgumentException.class, ConstraintViolationException.class})
     ResponseEntity<ApiError> badRequest(Exception exception) {
-        return error(HttpStatus.BAD_REQUEST, "invalid_request", message("error.invalid-request"), Map.of());
+        return error(ApiErrorCode.INVALID_REQUEST, Map.of());
     }
 
     @ExceptionHandler({HttpMessageNotReadableException.class, MissingServletRequestParameterException.class,
             MethodArgumentTypeMismatchException.class, HandlerMethodValidationException.class})
     ResponseEntity<ApiError> malformedRequest(Exception exception) {
-        return error(HttpStatus.BAD_REQUEST, "invalid_request", message("error.invalid-request"), Map.of());
+        return error(ApiErrorCode.INVALID_REQUEST, Map.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -47,87 +46,81 @@ public class GlobalExceptionHandler {
         Map<String, String> details = new LinkedHashMap<>();
         exception.getBindingResult().getFieldErrors()
                 .forEach(error -> details.putIfAbsent(error.getField(), error.getDefaultMessage()));
-        return error(HttpStatus.BAD_REQUEST, "validation_failed", message("error.validation-failed"), details);
+        return error(ApiErrorCode.VALIDATION_FAILED, details);
     }
 
     @ExceptionHandler(ForbiddenException.class)
     ResponseEntity<ApiError> forbidden(ForbiddenException exception) {
-        return error(HttpStatus.FORBIDDEN, "forbidden", message("error.forbidden"), Map.of());
+        return error(ApiErrorCode.FORBIDDEN, Map.of());
     }
 
     @ExceptionHandler(TooManyCodeRequestsException.class)
     ResponseEntity<ApiError> tooManyCodeRequests(TooManyCodeRequestsException exception) {
-        return error(HttpStatus.TOO_MANY_REQUESTS, "code_request_too_frequent",
-                message("error.code-request-too-frequent"), Map.of());
+        return error(ApiErrorCode.CODE_REQUEST_TOO_FREQUENT, Map.of());
     }
 
     @ExceptionHandler(VerificationCodeInvalidException.class)
     ResponseEntity<ApiError> invalidCode(VerificationCodeInvalidException exception) {
-        return error(HttpStatus.BAD_REQUEST, "verification_code_expired",
-                message("error.verification-code-invalid"), Map.of());
+        return error(ApiErrorCode.VERIFICATION_CODE_INVALID, Map.of());
     }
 
     @ExceptionHandler(AccountUnavailableException.class)
     ResponseEntity<ApiError> accountUnavailable(AccountUnavailableException exception) {
-        return error(HttpStatus.NOT_FOUND, "account_unavailable", message("error.account-unavailable"), Map.of());
+        return error(ApiErrorCode.ACCOUNT_UNAVAILABLE, Map.of());
     }
 
     @ExceptionHandler(InvalidCredentialsException.class)
     ResponseEntity<ApiError> invalidCredentials(InvalidCredentialsException exception) {
-        return error(HttpStatus.UNAUTHORIZED, "invalid_credentials",
-                message("error.invalid-credentials"), Map.of());
+        return error(ApiErrorCode.INVALID_CREDENTIALS, Map.of());
     }
 
     @ExceptionHandler(EmailAlreadyRegisteredException.class)
     ResponseEntity<ApiError> emailAlreadyRegistered(EmailAlreadyRegisteredException exception) {
-        return error(HttpStatus.CONFLICT, "email_already_registered",
-                message("error.email-already-registered"), Map.of());
+        return error(ApiErrorCode.EMAIL_ALREADY_REGISTERED, Map.of());
     }
 
     @ExceptionHandler(ExistingAccountRequiredException.class)
     ResponseEntity<ApiError> existingAccountRequired(ExistingAccountRequiredException exception) {
-        return error(HttpStatus.CONFLICT, "existing_account_required",
-                message("error.existing-account-required"), Map.of());
+        return error(ApiErrorCode.EXISTING_ACCOUNT_REQUIRED, Map.of());
     }
 
     @ExceptionHandler(ExistingAccountUnavailableException.class)
     ResponseEntity<ApiError> existingAccountUnavailable(ExistingAccountUnavailableException exception) {
-        return error(HttpStatus.NOT_FOUND, "existing_account_unavailable",
-                message("error.existing-account-unavailable"), Map.of());
+        return error(ApiErrorCode.EXISTING_ACCOUNT_UNAVAILABLE, Map.of());
     }
 
     @ExceptionHandler(EmailDeliveryException.class)
     ResponseEntity<ApiError> emailDelivery(EmailDeliveryException exception) {
-        return error(HttpStatus.SERVICE_UNAVAILABLE, "verification_email_unavailable",
-                message("error.verification-email-unavailable"), Map.of());
+        return error(ApiErrorCode.VERIFICATION_EMAIL_UNAVAILABLE, Map.of());
     }
 
     @ExceptionHandler(ResponseStatusException.class)
     ResponseEntity<ApiError> responseStatus(ResponseStatusException exception) {
-        String reason = exception.getReason();
-        String localized = reason != null && reason.startsWith("error.")
-                ? message(reason)
-                : message("error.request-failed");
-        return error(exception.getStatusCode(), "request_failed", localized, Map.of());
+        ApiErrorCode code = ApiErrorCode.forReason(exception.getReason())
+                .orElse(ApiErrorCode.REQUEST_FAILED);
+        return error(exception.getStatusCode(), code, Map.of());
     }
 
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiError> unexpected(Exception exception) {
         log.error("未处理的服务异常 type={}", exception.getClass().getSimpleName(), exception);
-        return error(HttpStatus.INTERNAL_SERVER_ERROR, "internal_server_error",
-                message("error.internal-server"), Map.of());
+        return error(ApiErrorCode.INTERNAL_SERVER_ERROR, Map.of());
     }
 
     private String message(String key) {
         return messages.getMessage(key, null, key, LocaleContextHolder.getLocale());
     }
 
-    private ResponseEntity<ApiError> error(HttpStatusCode status, String code, String message,
+    private ResponseEntity<ApiError> error(ApiErrorCode code, Map<String, String> details) {
+        return error(code.status(), code, details);
+    }
+
+    private ResponseEntity<ApiError> error(HttpStatusCode status, ApiErrorCode code,
                                            Map<String, String> details) {
         if (status.is4xxClientError()) {
-            log.warn("请求被拒绝 status={} code={}", status.value(), code);
+            log.warn("请求被拒绝 status={} code={}", status.value(), code.code());
         }
         return ResponseEntity.status(status).body(
-                new ApiError(code, message, Instant.now(), MDC.get("requestId"), details));
+                new ApiError(code.code(), message(code.messageKey()), Instant.now(), MDC.get("requestId"), details));
     }
 }
