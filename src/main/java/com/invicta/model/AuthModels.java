@@ -10,6 +10,20 @@ import java.util.List;
 public final class AuthModels {
     private AuthModels() {}
 
+    @Schema(description = "邮箱检查结果：REGISTERED 为 Invicta 登录邮箱，EXISTING_ACCOUNT 为历史商户联系邮箱，AVAILABLE 为可注册")
+    public enum EmailStatus {
+        REGISTERED,
+        EXISTING_ACCOUNT,
+        AVAILABLE
+    }
+
+    @Schema(description = "邮箱注册状态；仅用于页面引导，注册和登录接口仍会独立校验")
+    public record EmailCheckResponse(
+            @Schema(description = "邮箱是否已被账号占用；历史商户邮箱也返回 true", example = "true") boolean registered,
+            @Schema(description = "REGISTERED：使用邮箱登录；EXISTING_ACCOUNT：填写商户名走已有账户登录；AVAILABLE：可进入注册流程",
+                    allowableValues = {"REGISTERED", "EXISTING_ACCOUNT", "AVAILABLE"}, example = "REGISTERED")
+            EmailStatus status) {}
+
     @Schema(description = "操作结果提示")
     public record MessageResponse(
             @Schema(description = "按请求语言返回的提示", example = "验证码已发送") String message) {}

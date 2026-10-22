@@ -35,6 +35,13 @@ public class AuthController {
         this.messages = messages;
     }
 
+    @Operation(summary = "检查邮箱注册状态", description = "输入邮箱后调用。优先检查唯一登录邮箱 email，再检查历史商户联系邮箱 org_email；历史邮箱可能对应多个商户，因此仍需填写商户名称。仅用于页面引导，注册和登录时会再次校验。")
+    @SecurityRequirements
+    @PostMapping("/email/check")
+    public AuthModels.EmailCheckResponse checkEmail(@Valid @RequestBody EmailCheckRequest request) {
+        return authService.checkEmail(request.email());
+    }
+
     @Operation(summary = "发送邮箱验证码", description = "purpose 必填：REGISTRATION 用于新账号注册，对应 /api/v1/auth/register；LOGIN 用于已注册账号验证码登录，对应 /api/v1/auth/email/login。历史商户请使用 /api/v1/auth/existing/code，无需填写 purpose。验证码和重复发送冷却时间均为 60 秒；验证码成功使用后立即失效。")
     @SecurityRequirements
     @PostMapping("/email/code")
@@ -105,6 +112,13 @@ public class AuthController {
                 Boolean.TRUE.equals(jwt.getClaim("profileCompleted")),
                 jwt.getClaimAsStringList("roles"));
     }
+
+    @Schema(name = "EmailCheckRequest", description = "检查邮箱是否已注册")
+    public record EmailCheckRequest(
+            @NotBlank(message = "{validation.email.required}")
+            @Email(message = "{validation.email.invalid}")
+            @Schema(description = "待检查的邮箱；会去除首尾空格并按小写匹配", example = "owner@example.com")
+            String email) {}
 
     @Schema(name = "VerificationCodeRequest", description = "发送验证码请求")
     public record RequestCode(

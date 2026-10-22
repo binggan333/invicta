@@ -14,6 +14,7 @@ import com.invicta.common.VerificationCodeInvalidException;
 import com.invicta.config.InvictaProperties;
 import com.invicta.entity.SysOrganEntity;
 import com.invicta.mapper.SysOrganMapper;
+import com.invicta.model.AuthModels;
 import com.invicta.model.EmailCodePurpose;
 import com.invicta.model.OrganizationAccount;
 import com.invicta.model.OrganizationProfileRequest;
@@ -58,6 +59,18 @@ public class AuthServiceImpl implements AuthService {
         this.properties = properties;
         this.legacy = legacy;
         this.passwordEncoder = passwordEncoder;
+    }
+
+    @Override
+    public AuthModels.EmailCheckResponse checkEmail(String email) {
+        String normalizedEmail = EmailAddressUtils.normalize(email);
+        if (existsByEmail(normalizedEmail)) {
+            return new AuthModels.EmailCheckResponse(true, AuthModels.EmailStatus.REGISTERED);
+        }
+        if (existsByLegacyEmail(normalizedEmail)) {
+            return new AuthModels.EmailCheckResponse(true, AuthModels.EmailStatus.EXISTING_ACCOUNT);
+        }
+        return new AuthModels.EmailCheckResponse(false, AuthModels.EmailStatus.AVAILABLE);
     }
 
     @Override

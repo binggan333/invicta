@@ -1,10 +1,12 @@
 package com.invicta.service;
 
+import com.invicta.model.AuthModels;
 import com.invicta.model.EmailCodePurpose;
 import com.invicta.model.OrganizationProfileRequest;
 import com.invicta.model.RegistrationRequest;
 
 public interface AuthService {
+    AuthModels.EmailCheckResponse checkEmail(String email);
     void requestCode(String email, EmailCodePurpose purpose);
     void requestExistingAccountCode(String orgName);
     TokenService.TokenResponse verify(String email, String code);
