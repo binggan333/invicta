@@ -17,6 +17,9 @@ spring:
       timeout: 2s
 
 invicta:
+  cors:
+    # 当前沙盒前端地址；新增域名时可通过环境变量配置多个来源（逗号分隔）。
+    allowed-origins: ${INVICTA_CORS_ALLOWED_ORIGINS:http://13.251.43.87}
   mail:
     enabled: ${INVICTA_MAIL_ENABLED:false}
   legacy-api:
